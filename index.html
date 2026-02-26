@@ -3,181 +3,159 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-  <title>Stock Counter AI Pro</title>
+  <title>Stock Manager AI</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  
   <style>
-    :root { --bg: #fcfcfb; --surface: #ffffff; --border: #e0ddd6; --accent: #1a1a1a; --primary: #2563eb; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: #1a1a1a; }
-    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+    :root { --bg: #fcfcfb; --border: #e0ddd6; --accent: #1a1a1a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+    body { background: var(--bg); color: #1a1a1a; }
+    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; }
     
     .header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .app-title { font-size: 18px; font-weight: 800; }
     .total-badge { background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 
-    .scanner-section { padding: 16px; border-bottom: 8px solid #f8f7f5; }
-    #scannerWrap { background: #000; border-radius: 16px; overflow: hidden; height: 200px; position: relative; border: 1px solid var(--border); }
-    .placeholder { height: 100%; display: flex; align-items: center; justify-content: center; color: #888; background: #fafafa; font-size: 13px; font-weight: 600; }
+    .action-section { padding: 16px; background: #fff; border-bottom: 8px solid #f8f7f5; }
+    .btn-upload { width: 100%; padding: 16px; border-radius: 12px; border: 2px solid var(--accent); background: #fff; font-weight: 800; cursor: pointer; font-size: 14px; letter-spacing: 1px; }
     
-    .controls { display: flex; gap: 8px; margin-top: 12px; }
-    .btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; transition: 0.2s; }
-    .btn-main { background: var(--accent); color: #fff; }
-    .btn-alt { background: #fff; border: 1.5px solid var(--accent); color: var(--accent); }
-    
-    .status-bar { padding: 10px 16px; font-size: 11px; color: #666; display: flex; align-items: center; gap: 8px; font-weight: 700; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
-    .dot.active { background: #22c55e; animation: blink 1.5s infinite; }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .status-bar { padding: 10px 16px; font-size: 11px; color: #666; font-weight: 700; text-transform: uppercase; }
 
-    .list-container { padding: 0 16px 100px; }
-    .item-card { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f0f0f0; gap: 12px; }
-    .item-info { flex: 1; min-width: 0; }
-    .item-name { font-weight: 700; font-size: 15px; text-transform: uppercase; }
+    .list-container { padding: 0 16px 120px; }
+    .item-card { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f0f0f0; gap: 10px; }
+    .item-info { flex: 1; min-width: 0; cursor: pointer; }
+    .item-name { font-weight: 700; font-size: 14px; text-transform: uppercase; margin-bottom: 2px; }
     .item-meta { font-size: 11px; color: #999; font-family: monospace; }
     
-    .qty-box { display: flex; align-items: center; gap: 6px; background: #f5f5f5; padding: 4px; border-radius: 10px; }
-    .btn-q { width: 30px; height: 30px; border: none; background: #fff; border-radius: 8px; font-weight: 800; cursor: pointer; }
-    .qty-val { min-width: 25px; text-align: center; font-weight: 800; }
+    .qty-box { display: flex; align-items: center; gap: 6px; background: #f5f5f5; padding: 4px; border-radius: 8px; }
+    .btn-q { width: 28px; height: 28px; border: none; background: #fff; border-radius: 6px; font-weight: 800; cursor: pointer; }
+    .qty-val { min-width: 25px; text-align: center; font-weight: 800; font-size: 14px; }
 
-    /* Modal Styling */
+    .btn-edit { color: #2563eb; font-size: 11px; font-weight: 700; border: none; background: none; cursor: pointer; padding: 5px; }
+    .btn-del { color: #ef4444; font-size: 14px; font-weight: 800; border: none; background: none; cursor: pointer; padding: 5px; margin-left: 5px; }
+
+    .footer { position: fixed; bottom: 0; width: 100%; max-width: 430px; background: #fff; padding: 15px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+    .btn-foot { flex: 1; padding: 14px; border-radius: 10px; font-weight: 700; border: 1px solid var(--border); background: #fff; font-size: 12px; cursor: pointer; }
+    .btn-csv { background: var(--accent); color: #fff; border: none; }
+
+    /* Modal */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 1000; }
     .overlay.show { display: flex; }
-    .modal { background: #fff; width: 100%; border-radius: 28px 28px 0 0; padding: 24px; max-width: 430px; margin: 0 auto; }
+    .modal { background: #fff; width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-width: 430px; margin: 0 auto; }
     .label { font-size: 10px; font-weight: 800; color: #bbb; margin-bottom: 6px; display: block; text-transform: uppercase; }
-    .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 16px; outline: none; background: #fafafa; font-weight: 600; }
+    .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 16px; background: #fafafa; font-weight: 600; outline: none; }
     .btn-save { width: 100%; background: var(--accent); color: #fff; padding: 16px; border: none; border-radius: 14px; font-weight: 800; cursor: pointer; }
     
     #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
-    .spinner { width: 30px; height: 30px; border: 3px solid #eee; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
 <div id="loading">
-  <div class="spinner"></div>
-  <div style="font-weight: 800; font-size: 12px;">AI ANALYZING TAG...</div>
+  <div style="font-weight: 800; font-size: 12px; letter-spacing: 1px;">AI READING TEXT...</div>
 </div>
 
 <div class="app">
   <div class="header">
-    <div class="app-title">STOCK COUNTER AI</div>
-    <div class="total-badge" id="totalBadge">0 items</div>
+    <div class="app-title">STOCK MANAGER AI</div>
+    <div class="total-badge" id="totalBadge">0 ITEMS</div>
   </div>
 
-  <div class="scanner-section">
-    <div id="scannerWrap">
-      <div class="placeholder" id="placeholder">CAMERA PREVIEW</div>
-      <div id="reader"></div>
-    </div>
-    <div class="controls">
-      <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCAN</button>
-      <button class="btn btn-alt" onclick="document.getElementById('fileInput').click()">PHOTO TAG</button>
-      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="readTag(this)">
-    </div>
+  <div class="action-section">
+    <button class="btn-upload" onclick="document.getElementById('fileInput').click()">PHOTO TAG TO ADD</button>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="processTag(this)">
   </div>
 
-  <div class="status-bar">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText">SYSTEM READY</span>
-  </div>
+  <div class="status-bar" id="statusText">READY</div>
 
   <div class="list-container" id="itemsList"></div>
+
+  <div class="footer">
+    <button class="btn-foot" onclick="clearAll()">CLEAR ALL</button>
+    <button class="btn-foot btn-csv" onclick="exportCSV()">EXPORT CSV</button>
+  </div>
 </div>
 
 <div class="overlay" id="modal">
   <div class="modal">
     <div style="width: 40px; height: 4px; background: #eee; border-radius: 2px; margin: 0 auto 20px;"></div>
-    <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 20px;">PRODUCT INFO</h2>
+    <h2 id="modalTitle" style="font-size: 18px; font-weight: 800; margin-bottom: 20px;">PRODUCT INFO</h2>
     
-    <label class="label">JANCODE / BARCODE</label>
+    <label class="label">JANCODE</label>
     <input class="input" id="inBarcode" placeholder="Barcode">
     
-    <label class="label">PRODUCT NAME</label>
+    <label class="label">NAME</label>
     <input class="input" id="inName" placeholder="Product Name">
     
-    <label class="label">COLOR / DETAIL</label>
-    <input class="input" id="inDetail" placeholder="Detail">
+    <label class="label">DETAIL / COLOR</label>
+    <input class="input" id="inDetail" placeholder="Color or Detail">
     
-    <button class="btn-save" onclick="saveData()">SAVE & ADD TO STOCK</button>
-    <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; font-weight:700; font-size:12px;">DISMISS</button>
+    <button class="btn-save" onclick="saveData()">CONFIRM & SAVE</button>
+    <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; font-weight:700; font-size:12px; cursor:pointer;">CANCEL</button>
   </div>
 </div>
 
 <script>
-  let inventory = JSON.parse(localStorage.getItem('stock_v2') || '[]');
-  let html5QrCode = null;
-  let isScanning = false;
+  let inventory = JSON.parse(localStorage.getItem('stock_ai_v3') || '[]');
+  let editId = null;
 
-  // --- AI TAG READING (OCR) ---
-  async function readTag(input) {
+  async function processTag(input) {
     if (!input.files || !input.files[0]) return;
-    
     document.getElementById('loading').style.display = 'flex';
     
     try {
       const result = await Tesseract.recognize(input.files[0], 'eng');
       const text = result.data.text;
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 1);
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
-      // AI Logic matching your image example:
       let jancode = (text.match(/\d{12,13}/) || [""])[0];
       let nameParts = [];
-      let colorDetail = "";
-
-      const colorKeywords = ['RED', 'BLUE', 'BLACK', 'WHITE', 'NAVY', 'YELLOW', 'PINK', 'GREEN'];
+      let color = "";
+      const colors = ['RED', 'BLUE', 'BLACK', 'WHITE', 'NAVY', 'YELLOW', 'PINK', 'GREEN', 'GRAY'];
 
       lines.forEach(line => {
         const up = line.toUpperCase();
-        
-        // 1. Identify Product Name (Lines that are mostly uppercase words like "NYLON", "PEN CASE")
-        if (up === line && line.length > 3 && !line.includes('PHP') && !line.match(/\d/)) {
-            if (!["MADE IN", "CHINA", "JAPAN"].some(k => up.includes(k))) {
-                nameParts.push(line);
-            }
+        if (up === line && !line.match(/\d/) && !["MADE IN", "CHINA", "JAPAN"].some(k => up.includes(k))) {
+          nameParts.push(line);
         }
-        
-        // 2. Identify Color/Detail (e.g. "RED" or "W19xH8...")
-        if (colorKeywords.some(k => up.includes(k)) || up.match(/W\d+.*H\d+/)) {
-            colorDetail += (colorDetail ? ' ' : '') + line;
+        if (colors.some(c => up.includes(c)) || up.match(/W\d+.*H\d+/)) {
+          color = line;
         }
       });
 
-      // Show in Modal
-      openModal(jancode, nameParts.join(' '), colorDetail);
-
-    } catch (err) {
-      alert("AI failed to read image. Please try again.");
+      editId = null;
+      document.getElementById('modalTitle').textContent = "NEW PRODUCT FOUND";
+      openModal(jancode, nameParts.join(' '), color);
+    } catch (e) {
+      alert("AI could not read the image.");
     } finally {
       document.getElementById('loading').style.display = 'none';
       input.value = "";
     }
   }
 
-  // --- Core Functions ---
   function render() {
     const list = document.getElementById('itemsList');
-    document.getElementById('totalBadge').textContent = inventory.reduce((s, i) => s + i.count, 0) + ' items';
+    document.getElementById('totalBadge').textContent = inventory.reduce((s, i) => s + i.count, 0) + ' ITEMS';
     
     if (inventory.length === 0) {
-      list.innerHTML = '<div style="text-align:center; padding:40px; color:#ccc;">No items yet</div>';
+      list.innerHTML = '<div style="text-align:center; padding:60px; color:#ccc; font-size:12px; font-weight:700;">LIST IS EMPTY</div>';
       return;
     }
 
-    list.innerHTML = inventory.map(item => `
+    list.innerHTML = inventory.map((item, idx) => `
       <div class="item-card">
         <div class="item-info">
           <div class="item-name">${item.name}</div>
           <div class="item-meta">${item.barcode} | ${item.detail}</div>
+          <button class="btn-edit" onclick="startEdit(${idx})">EDIT INFO</button>
         </div>
         <div class="qty-box">
-          <button class="btn-q" onclick="adjust('${item.barcode}', -1)">-</button>
+          <button class="btn-q" onclick="adjust(${idx}, -1)">-</button>
           <span class="qty-val">${item.count}</span>
-          <button class="btn-q" onclick="adjust('${item.barcode}', 1)">+</button>
+          <button class="btn-q" onclick="adjust(${idx}, 1)">+</button>
         </div>
+        <button class="btn-del" onclick="removeItem(${idx})">✕</button>
       </div>
     `).join('');
   }
@@ -189,64 +167,69 @@
     document.getElementById('modal').classList.add('show');
   }
 
-  function saveData() {
-    const barcode = document.getElementById('inBarcode').value;
-    const name = document.getElementById('inName').value;
-    const detail = document.getElementById('inDetail').value;
-
-    if (!name || !barcode) return alert("Please fill Name and Barcode");
-
-    const existing = inventory.find(i => i.barcode === barcode);
-    if (existing) {
-      existing.count++;
-    } else {
-      inventory.unshift({ barcode, name, detail, count: 1 });
-    }
-
-    localStorage.setItem('stock_v2', JSON.stringify(inventory));
-    render();
-    closeModal();
-    document.getElementById('statusText').textContent = 'ITEM SAVED';
+  function startEdit(idx) {
+    editId = idx;
+    const item = inventory[idx];
+    document.getElementById('modalTitle').textContent = "EDIT PRODUCT INFO";
+    openModal(item.barcode, item.name, item.detail);
   }
 
-  function adjust(bc, delta) {
-    const item = inventory.find(i => i.barcode === bc);
-    if (item) {
-      item.count = Math.max(0, item.count + delta);
-      localStorage.setItem('stock_v2', JSON.stringify(inventory));
-      render();
+  function saveData() {
+    const barcode = document.getElementById('inBarcode').value.trim();
+    const name = document.getElementById('inName').value.trim();
+    const detail = document.getElementById('inDetail').value.trim();
+
+    if (!barcode || !name) return alert("Barcode and Name required");
+
+    if (editId !== null) {
+      inventory[editId] = { ...inventory[editId], barcode, name, detail };
+    } else {
+      const existing = inventory.find(i => i.barcode === barcode);
+      if (existing) {
+        existing.count++;
+      } else {
+        inventory.unshift({ barcode, name, detail, count: 1 });
+      }
     }
+
+    save();
+    closeModal();
+  }
+
+  function adjust(idx, delta) {
+    inventory[idx].count = Math.max(0, inventory[idx].count + delta);
+    save();
+  }
+
+  function removeItem(idx) {
+    if (confirm("Delete this item?")) {
+      inventory.splice(idx, 1);
+      save();
+    }
+  }
+
+  function clearAll() {
+    if (confirm("Clear all data?")) {
+      inventory = [];
+      save();
+    }
+  }
+
+  function save() {
+    localStorage.setItem('stock_ai_v3', JSON.stringify(inventory));
+    render();
   }
 
   function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
-  async function toggleScanner() {
-    const btn = document.getElementById('scanBtn');
-    if (!isScanning) {
-      html5QrCode = new Html5Qrcode("reader");
-      document.getElementById('placeholder').style.display = 'none';
-      await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (code) => {
-        onScan(code);
-      });
-      isScanning = true;
-      btn.textContent = "STOP";
-    } else {
-      await html5QrCode.stop();
-      isScanning = false;
-      btn.textContent = "LIVE SCAN";
-      document.getElementById('placeholder').style.display = 'flex';
-    }
-  }
-
-  function onScan(code) {
-    const existing = inventory.find(i => i.barcode === code);
-    if (existing) {
-        adjust(code, 1);
-        if (navigator.vibrate) navigator.vibrate(100);
-    } else {
-        openModal(code, "", "");
-        toggleScanner(); // Stop scanner to let user fill info
-    }
+  function exportCSV() {
+    if (inventory.length === 0) return;
+    const csv = Papa.unparse(inventory);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Stock_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
   }
 
   render();
