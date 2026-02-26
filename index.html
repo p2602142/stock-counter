@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-  <title>Stock Pro - Clean Version</title>
+  <title>Stock Pro - 3 Tabs Layout</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   
   <style>
@@ -14,42 +14,46 @@
       --accent: #2563eb;
       --danger: #dc2626;
       --border: #e5e7eb;
-      --nav-height: 60px;
+      --nav-height: 70px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
     body { background: var(--bg); color: #111; }
     .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #fff; display: flex; flex-direction: column; padding-bottom: var(--nav-height); }
 
     /* Header */
-    header { padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 100; }
+    header { padding: 18px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 100; }
     .header-top { display: flex; justify-content: space-between; align-items: center; }
     .total-badge { background: var(--primary); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 800; }
 
-    /* Scanner Section */
-    .scanner-area { padding: 16px; border-bottom: 8px solid #f3f4f6; }
-    #scannerWrap { background: #000; border-radius: 12px; overflow: hidden; height: 160px; position: relative; }
-    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-    .btn { height: 44px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; transition: 0.2s; text-transform: uppercase; }
-    .btn-main { background: var(--primary); color: #fff; }
-    .btn-alt { background: #f3f4f6; color: var(--primary); }
-
-    /* Search Bar */
-    .search-area { padding: 12px 16px; }
-    .search-box { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
-
-    /* Tabs Content */
-    .tab-content { display: none; flex: 1; padding: 0 16px; }
+    /* Tab Content Control */
+    .tab-content { display: none; flex: 1; padding: 0 16px; animation: fadeIn 0.2s ease; }
     .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Inventory Items */
+    /* SCANNER TAB - Large Camera */
+    .scanner-full { padding-top: 20px; text-align: center; }
+    #scannerWrap { 
+      background: #000; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      height: 400px; /* ขยายให้ใหญ่ขึ้นมากในหน้าเฉพาะ */
+      position: relative; 
+      margin-bottom: 20px;
+    }
+    #reader { width: 100% !important; height: 100% !important; }
+    #reader video { object-fit: cover !important; }
+
+    /* INVENTORY TAB */
+    .search-area { padding: 16px 0; position: sticky; top: 65px; background: #fff; z-index: 90; }
+    .search-box { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; background: #f9fafb; }
     .item-card { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f3f4f6; }
     .item-info { flex: 1; }
     .item-name { font-weight: 700; font-size: 15px; text-transform: uppercase; }
     .item-meta { font-size: 12px; color: #6b7280; font-family: monospace; }
     .qty-box { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 4px; border-radius: 8px; }
-    .btn-q { width: 32px; height: 32px; border: none; background: #fff; border-radius: 6px; font-weight: 800; }
+    .btn-q { width: 34px; height: 34px; border: none; background: #fff; border-radius: 6px; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-    /* Audit Log Items */
+    /* AUDIT LOG TAB */
     .log-card { padding: 12px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
     .log-time { font-size: 11px; color: #999; font-weight: 600; margin-bottom: 4px; }
     .log-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-right: 8px; }
@@ -57,19 +61,21 @@
     .tag-edit { background: #dbeafe; color: #1e40af; }
     .tag-del { background: #fee2e2; color: #991b1b; }
 
+    /* Shared Buttons */
+    .btn { height: 50px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; text-transform: uppercase; transition: 0.2s; }
+    .btn-main { background: var(--primary); color: #fff; width: 100%; }
+    .btn-alt { background: #f3f4f6; color: var(--primary); }
+
     /* Navigation Bar */
     nav { position: fixed; bottom: 0; width: 100%; max-width: 480px; height: var(--nav-height); background: #fff; border-top: 1px solid var(--border); display: flex; z-index: 200; }
-    .nav-btn { flex: 1; border: none; background: none; color: #999; font-weight: 800; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
-    .nav-btn.active { color: var(--accent); border-top: 2px solid var(--accent); }
+    .nav-btn { flex: 1; border: none; background: none; color: #999; font-weight: 800; font-size: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; padding-top: 5px; }
+    .nav-btn.active { color: var(--accent); border-top: 3px solid var(--accent); }
 
     /* Modal */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; z-index: 1000; }
     .overlay.show { display: flex; }
     .modal { background: #fff; width: 100%; border-radius: 20px 20px 0 0; padding: 24px; max-width: 480px; margin: 0 auto; }
     .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; font-size: 16px; outline: none; background: #f9fafb; }
-    .btn-save { width: 100%; height: 50px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-weight: 800; text-transform: uppercase; }
-
-    .tab-footer { margin: 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   </style>
 </head>
 <body>
@@ -77,25 +83,29 @@
 <div class="app">
   <header>
     <div class="header-top">
-      <h1 id="tabTitle" style="font-size: 16px; font-weight: 900; letter-spacing: 1px;">INVENTORY</h1>
+      <h1 id="tabTitle" style="font-size: 16px; font-weight: 900; letter-spacing: 1px;">SCANNER</h1>
       <div id="totalBadge" class="total-badge">0 ITEMS</div>
     </div>
   </header>
 
-  <div id="inventoryTab" class="tab-content active">
-    <div class="scanner-area">
-      <div id="scannerWrap"><div id="reader"></div></div>
-      <div class="btn-grid">
-        <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCANNER</button>
-        <button class="btn btn-alt" onclick="document.getElementById('fileIn').click()">UPLOAD IMAGE</button>
-        <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="decodeFile(this)">
+  <div id="scannerTab" class="tab-content active">
+    <div class="scanner-full">
+      <div id="scannerWrap">
+        <div id="reader"></div>
+        <div id="ph" style="position:absolute; color:#555; font-weight:800;">READY TO SCAN</div>
       </div>
+      <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()" style="margin-bottom:12px;">START LIVE SCANNER</button>
+      <button class="btn btn-alt" onclick="document.getElementById('fileIn').click()" style="width:100%;">UPLOAD IMAGE</button>
+      <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="decodeFile(this)">
     </div>
+  </div>
+
+  <div id="inventoryTab" class="tab-content">
     <div class="search-area">
-      <input type="text" id="searchInput" class="search-box" placeholder="Search product or color..." oninput="render()">
+      <input type="text" id="searchInput" class="search-box" placeholder="Search product, color, or barcode..." oninput="render()">
     </div>
     <div id="itemsList"></div>
-    <div class="tab-footer">
+    <div style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
       <button class="btn btn-alt" onclick="clearData()">RESET DATA</button>
       <button class="btn btn-main" onclick="exportTxtReport()">EXPORT REPORT</button>
     </div>
@@ -103,7 +113,7 @@
 
   <div id="auditTab" class="tab-content">
     <div style="padding: 16px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee;">
-      <span style="font-weight: 800; font-size: 13px; letter-spacing: 0.5px;">RECENT ACTIVITIES</span>
+      <span style="font-weight: 800; font-size: 13px;">HISTORY LOGS</span>
       <button onclick="clearLogs()" style="border:none; background:none; color:var(--danger); font-weight:700; font-size:11px;">CLEAR</button>
     </div>
     <div id="logsList"></div>
@@ -111,7 +121,8 @@
 </div>
 
 <nav>
-  <button class="nav-btn active" onclick="switchTab('inventory', this)">INVENTORY</button>
+  <button class="nav-btn active" onclick="switchTab('scanner', this)">SCANNER</button>
+  <button class="nav-btn" onclick="switchTab('inventory', this)">INVENTORY</button>
   <button class="nav-btn" onclick="switchTab('audit', this)">AUDIT LOG</button>
 </nav>
 
@@ -121,14 +132,14 @@
     <input class="input" id="inBarcode" readonly style="color: #888;">
     <input class="input" id="inName" placeholder="Product Name *" oninput="validateForm()">
     <input class="input" id="inDetail" placeholder="Color / Size / Detail">
-    <button class="btn-save" id="saveBtn" onclick="saveData()" disabled>SAVE TO STOCK</button>
+    <button class="btn btn-main" id="saveBtn" onclick="saveData()" disabled>SAVE TO STOCK</button>
     <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#999; margin-top:16px; font-weight:700; font-size:12px;">CANCEL</button>
   </div>
 </div>
 
 <script>
-  let inventory = JSON.parse(localStorage.getItem('stock_v10_inv') || '[]');
-  let logs = JSON.parse(localStorage.getItem('stock_v10_logs') || '[]');
+  let inventory = JSON.parse(localStorage.getItem('stock_v12_inv') || '[]');
+  let logs = JSON.parse(localStorage.getItem('stock_v12_logs') || '[]');
   let html5Scanner = null;
   let isScanning = false;
   let editingIdx = null;
@@ -138,17 +149,23 @@
     const time = new Date().toLocaleString('en-GB', { hour12: false });
     logs.unshift({ type, msg, time });
     if (logs.length > 50) logs.pop();
-    localStorage.setItem('stock_v10_logs', JSON.stringify(logs));
+    localStorage.setItem('stock_v12_logs', JSON.stringify(logs));
     renderLogs();
   }
 
   function switchTab(tab, btn) {
+    // Stop scanner if leaving scanner tab
+    if (tab !== 'scanner' && isScanning) stopScanner();
+
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
     document.getElementById(tab + 'Tab').classList.add('active');
     btn.classList.add('active');
     document.getElementById('tabTitle').textContent = tab.toUpperCase();
-    if(tab === 'inventory') render(); else renderLogs();
+    
+    if (tab === 'inventory') render();
+    if (tab === 'audit') renderLogs();
   }
 
   function render() {
@@ -162,7 +179,7 @@
     );
     
     if (filtered.length === 0) {
-      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:12px;">NO ITEMS FOUND</div>`;
+      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:12px;">LIST IS EMPTY</div>`;
       return;
     }
 
@@ -188,7 +205,7 @@
   function renderLogs() {
     const list = document.getElementById('logsList');
     if (logs.length === 0) {
-      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:12px;">NO ACTIVITY RECORDED</div>`;
+      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:12px;">NO HISTORY</div>`;
       return;
     }
     list.innerHTML = logs.map(log => `
@@ -199,16 +216,26 @@
     `).join('');
   }
 
+  // --- Scanner Logic ---
   async function toggleScanner() {
     const btn = document.getElementById('scanBtn');
+    const ph = document.getElementById('ph');
     if (!isScanning) {
       html5Scanner = new Html5Qrcode("reader");
       try {
-        await html5Scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 120 } }, onScanSuccess);
+        ph.style.display = 'none';
+        await html5Scanner.start(
+          { facingMode: "environment" }, 
+          { fps: 20, qrbox: { width: 280, height: 160 } }, 
+          onScanSuccess
+        );
         isScanning = true;
         btn.textContent = "STOP SCANNER";
         btn.style.background = "var(--danger)";
-      } catch (e) { alert("Camera Access Denied"); }
+      } catch (e) { 
+        alert("Camera Error"); 
+        ph.style.display = 'block';
+      }
     } else { stopScanner(); }
   }
 
@@ -216,8 +243,9 @@
     if (html5Scanner) {
       await html5Scanner.stop();
       isScanning = false;
-      document.getElementById('scanBtn').textContent = "LIVE SCANNER";
+      document.getElementById('scanBtn').textContent = "START LIVE SCANNER";
       document.getElementById('scanBtn').style.background = "var(--primary)";
+      document.getElementById('ph').style.display = 'block';
     }
   }
 
@@ -227,8 +255,9 @@
     const existingIdx = inventory.findIndex(i => i.barcode === code);
     if (existingIdx !== -1) {
       inventory[existingIdx].count++;
-      addLog('add', `Added count to ${inventory[existingIdx].name}`);
+      addLog('add', `SCANNED: ${inventory[existingIdx].name} (+1)`);
       save();
+      // Optional: stopScanner() if you want one scan at a time
     } else {
       stopScanner();
       editingIdx = null;
@@ -242,23 +271,25 @@
     try {
       const res = await s.scanFile(input.files[0], true);
       onScanSuccess(res);
-    } catch (e) { alert("Barcode scanning failed."); }
+    } catch (e) { alert("Barcode not found in image."); }
     input.value = "";
   }
 
+  // --- CRUD Actions ---
   function saveData() {
     const barcode = document.getElementById('inBarcode').value;
     const name = document.getElementById('inName').value.trim();
     const detail = document.getElementById('inDetail').value.trim();
     if (editingIdx !== null) {
       inventory[editingIdx] = { ...inventory[editingIdx], name, detail };
-      addLog('edit', `Updated: ${name}`);
+      addLog('edit', `UPDATED: ${name}`);
     } else {
       inventory.unshift({ barcode, name, detail, count: 1 });
-      addLog('add', `Created: ${name}`);
+      addLog('add', `CREATED: ${name}`);
     }
     save();
     closeModal();
+    switchTab('inventory', document.querySelectorAll('.nav-btn')[1]); // Auto switch to inventory
   }
 
   function startEdit(idx) {
@@ -273,82 +304,55 @@
 
   function adjust(idx, delta) {
     inventory[idx].count = Math.max(0, inventory[idx].count + delta);
-    addLog('edit', `QTY Update: ${inventory[idx].name} to ${inventory[idx].count}`);
+    addLog('edit', `QTY: ${inventory[idx].name} -> ${inventory[idx].count}`);
     save();
   }
 
   function removeItem(idx) {
     if (confirm("Delete this item?")) {
-      addLog('del', `Removed: ${inventory[idx].name}`);
+      addLog('del', `REMOVED: ${inventory[idx].name}`);
       inventory.splice(idx, 1);
       save();
     }
   }
 
-  function clearData() {
-    if (confirm("Reset all inventory?")) {
-      inventory = [];
-      addLog('del', `Wiped database`);
-      save();
-    }
-  }
-
-  function clearLogs() {
-    if (confirm("Clear history?")) {
-      logs = [];
-      localStorage.setItem('stock_v10_logs', JSON.stringify(logs));
-      renderLogs();
-    }
-  }
-
-  function save() {
-    localStorage.setItem('stock_v10_inv', JSON.stringify(inventory));
-    render();
-  }
-
-  function openModal(code) {
+  function clearData() { if (confirm("Clear all data?")) { inventory = []; addLog('del', `WIPED ALL`); save(); } }
+  function clearLogs() { if (confirm("Clear history?")) { logs = []; localStorage.setItem('stock_v12_logs', JSON.stringify(logs)); renderLogs(); } }
+  function save() { localStorage.setItem('stock_v12_inv', JSON.stringify(inventory)); render(); }
+  function openModal(code) { 
     document.getElementById('inBarcode').value = code;
     document.getElementById('inName').value = "";
     document.getElementById('inDetail').value = "";
     document.getElementById('modal').classList.add('show');
     validateForm();
   }
-
-  function validateForm() {
-    const name = document.getElementById('inName').value.trim();
-    document.getElementById('saveBtn').disabled = name.length < 2;
-  }
-
+  function validateForm() { document.getElementById('saveBtn').disabled = document.getElementById('inName').value.trim().length < 2; }
   function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
   function exportTxtReport() {
     if (inventory.length === 0) return;
     const now = new Date();
-    const dateTime = now.toLocaleString('en-GB');
     let report = "----------------------------------------\n";
     report += "          COUNTING REPORT               \n";
     report += "----------------------------------------\n\n";
-    report += `DATE: ${dateTime}\n`;
-    report += "----------------------------------------\n";
-    report += "PRODUCT & DETAIL                 QTY    \n";
+    report += `DATE: ${now.toLocaleString('en-GB')}\n`;
     report += "----------------------------------------\n";
     inventory.forEach(item => {
-      const detailStr = item.detail ? ` (${item.detail})` : "";
-      report += (item.name + detailStr).toUpperCase() + "\n";
+      report += (item.name + (item.detail ? ` (${item.detail})` : "")).toUpperCase() + "\n";
       report += `[${item.barcode}]`.padEnd(30) + String(item.count).padStart(10) + "\n\n";
     });
     report += "----------------------------------------\n";
     report += `TOTAL ITEMS: ${inventory.reduce((s, i) => s + i.count, 0)}\n`;
     report += "----------------------------------------\n";
     const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Report_${now.toISOString().slice(0,10)}.txt`;
-    link.click();
-    addLog('edit', `Exported Report`);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `Report_${now.toISOString().slice(0,10)}.txt`;
+    a.click();
+    addLog('edit', `EXPORTED TXT`);
   }
 
-  render();
+  render(); // Initial Badge update
 </script>
 </body>
 </html>
