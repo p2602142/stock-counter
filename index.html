@@ -1,40 +1,524 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stock Counter</title>
   <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --border: #e8e8e8;
+      --text: #111;
+      --muted: #999;
+      --accent: #111;
+      --accent-light: #f0f0f0;
+      --danger: #e53e3e;
+      --radius: 10px;
+      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #333; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      font-size: 14px; line-height: 1.5;
+    }
 
+    /* Header */
     header {
-      background: #1a1a2e; color: #fff;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       padding: 14px 20px;
       display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
     }
-    header h1 { font-size: 1.1rem; }
-    header span { font-size: 0.8rem; opacity: 0.6; }
+    header h1 { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+    header span { font-size: 12px; color: var(--muted); }
 
-    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .container { max-width: 560px; margin: 0 auto; padding: 20px 16px; }
 
-    /* ── Scanner Card ── */
+    /* Section */
+    .section { margin-bottom: 20px; }
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .6px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* Card */
     .card {
-      background: #fff; border-radius: 12px;
-      padding: 16px; margin-bottom: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
     }
-    .card-title { font-size: 0.78rem; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
 
-    #preview {
-      width: 100%; height: 220px; background: #111;
-      border-radius: 8px; object-fit: cover;
-      display: none;
+    /* Camera */
+    #cam-placeholder {
+      height: 200px; background: #f5f5f5;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; color: var(--muted);
     }
-    .cam-placeholder {
-      width: 100%; height: 220px; background: #111;
-      border-radius: 8px; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; color: #555; gap: 8px;
+    #cam-placeholder svg { width: 32px; height: 32px; opacity: .4; }
+    #cam-placeholder span { font-size: 13px; }
+    #preview {
+      width: 100%; height: 200px;
+      object-fit: cover; display: none;
+    }
+
+    .cam-controls {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 8px; align-items: center;
+    }
+    #status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #d4d4d4; flex-shrink: 0;
+    }
+    #status-dot.active { background: #22c55e; }
+    #status-dot.warn   { background: #f59e0b; }
+    #status-text { font-size: 12px; color: var(--muted); flex: 1; }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px; border: none; border-radius: 7px;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: background .15s, opacity .15s;
+      white-space: nowrap;
+    }
+    .btn:active { opacity: .75; }
+    .btn-dark  { background: var(--accent); color: #fff; }
+    .btn-dark:hover { background: #333; }
+    .btn-ghost {
+      background: none; color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--accent-light); }
+    .btn-danger-ghost {
+      background: none; color: var(--danger);
+      border: 1px solid #fca5a5;
+      font-size: 13px; font-weight: 500;
+      padding: 6px 12px; border-radius: 7px;
+      cursor: pointer;
+    }
+    .btn-danger-ghost:hover { background: #fff5f5; }
+    .btn-link {
+      background: none; border: none;
+      color: var(--muted); font-size: 12px;
+      cursor: pointer; padding: 4px 6px;
+      border-radius: 5px;
+    }
+    .btn-link:hover { color: var(--text); background: var(--accent-light); }
+
+    /* Manual input */
+    .manual-wrap {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 8px;
+    }
+    .manual-wrap input {
+      flex: 1; border: 1px solid var(--border);
+      border-radius: 7px; padding: 7px 11px;
+      font-size: 13px; outline: none; background: var(--bg);
+    }
+    .manual-wrap input:focus { border-color: #999; }
+
+    /* Summary */
+    .summary-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 20px;
+    }
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .summary-card .num {
+      font-size: 22px; font-weight: 700;
+      letter-spacing: -.5px;
+    }
+    .summary-card .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Table header */
+    .list-header {
+      padding: 12px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .list-header span { font-size: 13px; font-weight: 600; }
+    .list-actions { display: flex; gap: 4px; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      padding: 8px 14px; text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+    tbody tr { transition: background .1s; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td {
+      padding: 10px 14px; font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    .td-barcode { font-family: monospace; font-size: 11px; color: var(--muted); }
+    .td-name { font-weight: 500; }
+    .td-detail { font-size: 11px; color: var(--muted); }
+
+    /* Qty control */
+    .qty-ctrl { display: flex; align-items: center; gap: 8px; }
+    .qty-btn {
+      width: 24px; height: 24px; border-radius: 5px;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-size: 14px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+    .qty-btn:hover { background: var(--accent-light); }
+    .qty-num { font-size: 13px; font-weight: 600; min-width: 24px; text-align: center; }
+    .del-row-btn {
+      background: none; border: none; color: #ccc;
+      cursor: pointer; font-size: 15px; padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .del-row-btn:hover { color: var(--danger); background: #fff5f5; }
+
+    .empty-row td { text-align: center; color: var(--muted); padding: 32px; font-size: 13px; }
+
+    /* Modal */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.35); z-index: 50;
+      align-items: flex-end; justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    @media (min-width: 480px) { .overlay { align-items: center; } }
+
+    .sheet {
+      background: var(--surface);
+      width: 100%; max-width: 440px;
+      border-radius: 16px 16px 0 0;
+      padding: 24px 20px 32px;
+      animation: slideUp .2s ease;
+    }
+    @media (min-width: 480px) {
+      .sheet { border-radius: 14px; padding: 28px 24px; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .sheet-handle {
+      width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+    @media (min-width: 480px) { .sheet-handle { display: none; } }
+    .sheet h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .sheet .sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+    .field-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .4px;
+      display: block; margin-bottom: 6px;
+    }
+    .field-input {
+      width: 100%; padding: 9px 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 14px; outline: none; margin-bottom: 14px;
+      background: var(--bg);
+    }
+    .field-input:focus { border-color: #888; }
+    .field-input.err { border-color: var(--danger); }
+    .sheet-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .sheet-actions .btn { flex: 1; padding: 10px; }
+
+    /* Confirm sheet */
+    .confirm-icon { font-size: 28px; margin-bottom: 10px; }
+    .confirm-body { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--text); color: #fff;
+      padding: 9px 18px; border-radius: 20px;
+      font-size: 13px; opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      white-space: nowrap; z-index: 100;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Stock Counter</h1>
+  <span>Barcode Inventory</span>
+</header>
+
+<div class="container">
+
+  <!-- Scanner -->
+  <div class="section">
+    <div class="section-label">Scanner</div>
+    <div class="card">
+      <div id="cam-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
+          <rect x="7" y="7" width="10" height="10" rx="1"/>
+        </svg>
+        <span>กดเริ่มสแกนเพื่อเปิดกล้อง</span>
+      </div>
+      <video id="preview" autoplay playsinline></video>
+
+      <div class="cam-controls">
+        <div id="status-dot"></div>
+        <span id="status-text">พร้อมใช้งาน</span>
+        <button class="btn btn-dark" id="btn-scan">เริ่มสแกน</button>
+        <button class="btn btn-ghost" id="btn-stop" style="display:none">หยุด</button>
+      </div>
+
+      <!-- Manual / USB Input -->
+      <div class="manual-wrap">
+        <input type="text" id="manual-input" placeholder="พิมพ์หรือสแกน Barcode ด้วย USB Scanner…"/>
+        <button class="btn btn-ghost" id="btn-manual">เพิ่ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-row">
+    <div class="summary-card">
+      <div class="num" id="sum-sku">0</div>
+      <div class="lbl">Total SKU</div>
+    </div>
+    <div class="summary-card">
+      <div class="num" id="sum-qty">0</div>
+      <div class="lbl">Total Quantity</div>
+    </div>
+  </div>
+
+  <!-- Product List -->
+  <div class="section">
+    <div class="card">
+      <div class="list-header">
+        <span>รายการสินค้า</span>
+        <div class="list-actions">
+          <button class="btn-link" id="btn-export">↓ CSV</button>
+          <button class="btn-link" id="btn-clear" style="color:#e53e3e">ล้างทั้งหมด</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Barcode</th>
+            <th>ชื่อสินค้า</th>
+            <th>จำนวน</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="product-list">
+          <tr class="empty-row"><td colspan="4">ยังไม่มีรายการสินค้า</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- New Product Sheet -->
+<div class="overlay" id="new-modal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>พบรหัสใหม่</h3>
+    <p class="sub" id="modal-bc-label">Barcode: –</p>
+    <label class="field-label">ชื่อสินค้า *</label>
+    <input class="field-input" type="text" id="modal-name" placeholder="ชื่อสินค้า"/>
+    <label class="field-label">รายละเอียด <span style="font-weight:400;text-transform:none;letter-spacing:0">(หน่วย / ขนาด / หมวดหมู่)</span></label>
+    <input class="field-input" type="text" id="modal-detail" placeholder="เช่น ชิ้น, กล่อง, อาหาร…"/>
+    <div class="sheet-actions">
+      <button class="btn btn-dark" id="modal-ok">เพิ่มสินค้าและเริ่มนับ</button>
+      <button class="btn btn-ghost" id="modal-cancel">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Clear Sheet -->
+<div class="overlay" id="confirm-modal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="confirm-icon">🗑</div>
+    <h3>ล้างข้อมูลทั้งหมด?</h3>
+    <p class="confirm-body">รายการสินค้าและจำนวนนับทั้งหมดจะถูกลบออก<br>การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-no">ยกเลิก</button>
+      <button class="btn" id="confirm-yes" style="background:var(--danger);color:#fff;flex:1">ล้างข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.20.0/zxing.min.js"></script>
+<script>
+const KEY = 'stock_v1';
+let products = {};
+let pending = null, scanning = false, reader = null;
+
+// ── Storage ──
+const load = () => { try { products = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { products = {}; } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(products)); } catch { toast('บันทึกไม่สำเร็จ'); } };
+
+// ── Render ──
+function render() {
+  const tb = document.getElementById('product-list');
+  const keys = Object.keys(products);
+  if (!keys.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="4">ยังไม่มีรายการสินค้า</td></tr>';
+  } else {
+    tb.innerHTML = keys.map(bc => {
+      const p = products[bc];
+      return `<tr>
+        <td class="td-barcode">${bc}</td>
+        <td><div class="td-name">${p.name}</div>${p.detail ? `<div class="td-detail">${p.detail}</div>` : ''}</td>
+        <td><div class="qty-ctrl">
+          <button class="qty-btn" onclick="adj('${bc}',-1)">−</button>
+          <span class="qty-num">${p.qty}</span>
+          <button class="qty-btn" onclick="adj('${bc}',1)">+</button>
+        </div></td>
+        <td><button class="del-row-btn" onclick="del('${bc}')">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('sum-sku').textContent = keys.length;
+  document.getElementById('sum-qty').textContent = keys.reduce((s,k) => s + products[k].qty, 0);
+}
+
+// ── Barcode handler ──
+function onBarcode(bc) {
+  bc = bc.trim(); if (!bc) return;
+  if (products[bc]) {
+    products[bc].qty++;
+    save(); render();
+    setStatus(`${products[bc].name} (${products[bc].qty})`, 'active');
+    toast(`+1  ${products[bc].name}`);
+  } else {
+    pending = bc;
+    document.getElementById('modal-bc-label').textContent = `Barcode: ${bc}`;
+    document.getElementById('modal-name').value = '';
+    document.getElementById('modal-detail').value = '';
+    document.getElementById('modal-name').classList.remove('err');
+    document.getElementById('new-modal').classList.add('open');
+    setTimeout(() => document.getElementById('modal-name').focus(), 120);
+  }
+}
+
+// ── Camera ──
+document.getElementById('btn-scan').addEventListener('click', startScan);
+document.getElementById('btn-stop').addEventListener('click', stopScan);
+
+async function startScan() {
+  if (scanning) return;
+  try {
+    if (typeof ZXing === 'undefined') throw new Error('ZXing not loaded');
+    reader = new ZXing.BrowserMultiFormatReader();
+    const devs = await reader.listVideoInputDevices();
+    if (!devs.length) { setStatus('ไม่พบกล้อง', 'err'); return; }
+    const id = devs[devs.length - 1].deviceId;
+    document.getElementById('cam-placeholder').style.display = 'none';
+    document.getElementById('preview').style.display = 'block';
+    document.getElementById('btn-scan').style.display = 'none';
+    document.getElementById('btn-stop').style.display = '';
+    scanning = true; setStatus('กำลังสแกน…', 'warn');
+    await reader.decodeFromVideoDevice(id, 'preview', (res) => {
+      if (!res) return;
+      onBarcode(res.getText());
+      reader.reset(); scanning = false;
+      setTimeout(startScan, 1500);
+    });
+  } catch(e) { setStatus('เปิดกล้องไม่ได้', 'err'); }
+}
+
+function stopScan() {
+  if (reader) { reader.reset(); reader = null; }
+  scanning = false;
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('cam-placeholder').style.display = 'flex';
+  document.getElementById('btn-scan').style.display = '';
+  document.getElementById('btn-stop').style.display = 'none';
+  setStatus('หยุดสแกน', '');
+}
+
+// ── Manual input ──
+const mi = document.getElementById('manual-input');
+document.getElementById('btn-manual').addEventListener('click', () => { onBarcode(mi.value); mi.value = ''; mi.focus(); });
+mi.addEventListener('keydown', e => { if (e.key === 'Enter') { onBarcode(mi.value); mi.value = ''; } });
+
+// ── New product modal ──
+document.getElementById('modal-ok').addEventListener('click', () => {
+  const name = document.getElementById('modal-name').value.trim();
+  if (!name) { document.getElementById('modal-name').classList.add('err'); return; }
+  products[pending] = { name, detail: document.getElementById('modal-detail').value.trim(), qty: 1 };
+  save(); render();
+  document.getElementById('new-modal').classList.remove('open');
+  toast(`เพิ่ม ${name} แล้ว`);
+  setStatus(`เพิ่ม ${name}`, 'active');
+  pending = null;
+});
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('new-modal').classList.remove('open'); pending = null;
+});
+
+// ── Confirm clear ──
+document.getElementById('btn-clear').addEventListener('click', () => document.getElementById('confirm-modal').classList.add('open'));
+document.getElementById('confirm-no').addEventListener('click', () => document.getElementById('confirm-modal').classList.remove('open'));
+document.getElementById('confirm-yes').addEventListener('click', () => {
+  products = {}; save(); render();
+  document.getElementById('confirm-modal').classList.remove('open');
+  toast('ล้างข้อมูลแล้ว'); setStatus('พร้อมใช้งาน', '');
+});
+
+// ── Qty / Delete ──
+function adj(bc, d) { if (!products[bc]) return; products[bc].qty = Math.max(0, products[bc].qty + d); save(); render(); }
+function del(bc) { if (!products[bc]) return; const n = products[bc].name; delete products[bc]; save(); render(); toast(`ลบ ${n} แล้ว`); }
+
+// ── Export CSV ──
+document.getElementById('btn-export').addEventListener('click', () => {
+  const keys = Object.keys(products);
+  if (!keys.length) { toast('ไม่มีข้อมูล'); return; }
+  const rows = [['Barcode','ชื่อสินค้า','จำนวน','รายละเอียด'],
+    ...keys.map(bc => [bc, products[bc].name, products[bc].qty, products[bc].detail || ''])];
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'})),
+    download: `stock_${new Date().toISOString().slice(0,10)}.csv`
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('ดาวน์โหลด CSV แล้ว');
+});
+
+// ── Helpers ──
+function setStatus(msg, type) {
+  document.getElementById('status-text').textContent = msg || 'พร้อมใช้งาน';
+  const d = document.getElementById('status-dot');
+  d.className = type ? `${type}` : '';
+}
+let _t;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_t); _t = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── Init ──
+load(); render();
+</script>
+</body>
+</html>      align-items: center; justify-content: center; color: #555; gap: 8px;
     }
     .cam-placeholder svg { width: 48px; height: 48px; }
 
