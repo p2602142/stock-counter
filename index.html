@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stock Counter</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#f5f4f0;color:#2c2c2c;min-height:100vh;max-width:430px;margin:0 auto;position:relative}
+  .app{display:flex;flex-direction:column;min-height:100vh}
+  .header{background:#fff;padding:20px 20px 16px;border-bottom:1px solid #e8e6e1;position:sticky;top:0;z-index:10}
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .app-title{font-size:18px;font-weight:600;letter-spacing:-0.3px;color:#1a1a1a}
+  .app-subtitle{font-size:11px;color:#999;letter-spacing:0.5px;text-transform:uppercase}
+  .total-badge{background:#f0ece4;color:#5c5040;font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px}
+  .scanner-section{background:#fff;margin:12px 16px 0;border-radius:16px;overflow:hidden;border:1px solid #e8e6e1}
+  .scanner-header{padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between}
+  .scanner-label{font-size:12px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.5px}
+  .scan-toggle{background:#2c2c2c;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit}
+  .scan-toggle.active{background:#e8503a;color:#fff}
+  .scan-toggle:hover{opacity:.85}
+  #reader{width:100%}
+  #reader video{border-radius:0!important}
+  .scanner-placeholder{height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#fafaf8}
+  .scan-icon{font-size:36px;opacity:.3}
+  .scan-hint{font-size:12px;color:#bbb}
+  .status-bar{margin:10px 16px 0;padding:10px 14px;background:#fff;border-radius:10px;border:1px solid #e8e6e1;display:flex;align-items:center;gap:8px;min-height:40px}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:#d4d0c8;flex-shrink:0;transition:background .3s}
+  .status-dot.success{background:#5ba85b}
+  .status-dot.new{background:#e8a030}
+  .status-text{font-size:12px;color:#888;flex:1}
+  .table-section{margin:12px 16px 0;flex:1}
+  .table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px}
+  .table-title{font-size:12px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.5px}
+  .actions{display:flex;gap:6px}
+  .btn-sm{border:1px solid #e0ddd6;background:#fff;color:#555;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s}
+  .btn-sm:hover{background:#f5f4f0}
+  .btn-danger{border-color:#f0ddd9;color:#c0544a}
+  .btn-danger:hover{background:#fdf5f4}
+  .items-list{display:flex;flex-direction:column;gap:6px;padding-bottom:100px}
+  .empty-state{text-align:center;padding:48px 20px;color:#bbb}
+  .empty-icon{font-size:40px;margin-bottom:10px;opacity:.4}
+  .empty-text{font-size:13px}
+  .item-card{background:#fff;border-radius:12px;border:1px solid #e8e6e1;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:all .2s;position:relative;overflow:hidden}
+  .item-card.flash{animation:flash .4s ease}
+  @keyframes flash{0%{background:#fff9ee}50%{background:#fef3d0}100%{background:#fff}}
+  .item-rank{font-size:10px;color:#ccc;font-weight:600;width:16px;flex-shrink:0;text-align:center}
+  .item-info{flex:1;min-width:0}
+  .item-name{font-size:14px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item-meta{font-size:11px;color:#aaa;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item-count-wrap{display:flex;align-items:center;gap:6px}
+  .btn-count{width:28px;height:28px;border-radius:8px;border:1px solid #e8e6e1;background:#fafaf8;color:#555;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;transition:all .15s}
+  .btn-count:hover{background:#f0ece4}
+  .item-count{font-size:18px;font-weight:600;color:#2c2c2c;min-width:28px;text-align:center}
+  .btn-del{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:#ddd;cursor:pointer;font-size:14px;transition:color .2s;display:flex;align-items:center;justify-content:center}
+  .btn-del:hover{color:#c0544a}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;max-width:430px;margin:0 auto}
+  .modal-overlay.show{opacity:1;pointer-events:all}
+  .modal{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:24px 20px 36px;transform:translateY(30px);transition:transform .25s;max-height:90vh;overflow-y:auto}
+  .modal-overlay.show .modal{transform:translateY(0)}
+  .modal-handle{width:36px;height:4px;background:#e0ddd6;border-radius:2px;margin:0 auto 20px}
+  .modal-title{font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+  .modal-barcode{font-size:11px;color:#aaa;margin-bottom:20px;letter-spacing:.5px}
+  .form-group{margin-bottom:14px}
+  .form-label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+  .form-input{width:100%;border:1px solid #e0ddd6;border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;color:#1a1a1a;background:#fafaf8;outline:none;transition:border-color .2s}
+  .form-input:focus{border-color:#b0a898;background:#fff}
+  .btn-primary{width:100%;background:#2c2c2c;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:8px}
+  .btn-primary:hover{opacity:.85}
+  .btn-cancel{width:100%;background:transparent;color:#aaa;border:none;border-radius:12px;padding:10px;font-size:13px;cursor:pointer;font-family:inherit;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="app-title">Stock Counter</div>
+        <div class="app-subtitle">Barcode Inventory</div>
+      </div>
+      <div class="total-badge" id="totalBadge">0 items</div>
+    </div>
+  </div>
+
+  <div class="scanner-section">
+    <div class="scanner-header">
+      <span class="scanner-label">Scanner</span>
+      <button class="scan-toggle" id="scanBtn" onclick="toggleScanner()">เริ่มสแกน</button>
+    </div>
+    <div id="scannerWrap">
+      <div class="scanner-placeholder" id="placeholder">
+        <div class="scan-icon">▦</div>
+        <div class="scan-hint">กดเริ่มสแกนเพื่อเปิดกล้อง</div>
+      </div>
+      <div id="reader" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <div class="status-text" id="statusText">พร้อมใช้งาน</div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <span class="table-title">รายการสินค้า</span>
+      <div class="actions">
+        <button class="btn-sm btn-danger" onclick="clearAll()">ล้างทั้งหมด</button>
+        <button class="btn-sm" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+    </div>
+    <div class="items-list" id="itemsList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">พบรหัสใหม่</div>
+    <div class="modal-barcode" id="modalBarcode"></div>
+    <div class="form-group">
+      <label class="form-label">ชื่อสินค้า *</label>
+      <input class="form-input" id="inputName" placeholder="เช่น Nylon Pen Case" onkeydown="if(event.key==='Enter')saveItem()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">รายละเอียด</label>
+      <input class="form-input" id="inputDetail" placeholder="เช่น Red / W19×H8×D8cm" onkeydown="if(event.key==='Enter')saveItem()">
+    </div>
+    <button class="btn-primary" onclick="saveItem()">เพิ่มสินค้าและเริ่มนับ</button>
+    <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'stock_counter_v1';
+  let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let scanner = null;
+  let scanning = false;
+  let pendingBarcode = null;
+  let scanCooldown = false;
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  function vibrate() {
+    if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+  }
+
+  function setStatus(msg, type = '') {
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    dot.className = 'status-dot' + (type ? ' ' + type : '');
+    txt.textContent = msg;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function render() {
+    const list = document.getElementById('itemsList');
+    const total = items.reduce((s, i) => s + i.count, 0);
+    document.getElementById('totalBadge').textContent = total + ' items';
+
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">ยังไม่มีสินค้า<br>สแกน Barcode เพื่อเริ่มนับ</div></div>`;
+      return;
+    }
+
+    list.innerHTML = items.map((item, i) => `
+      <div class="item-card" id="card-${item.barcode}">
+        <div class="item-rank">${i + 1}</div>
+        <div class="item-info">
+          <div class="item-name">${esc(item.name)}</div>
+          <div class="item-meta">${esc(item.barcode)}${item.detail ? ' · ' + esc(item.detail) : ''}</div>
+        </div>
+        <div class="item-count-wrap">
+          <button class="btn-count" onclick="adjust('${item.barcode}',-1)">−</button>
+          <span class="item-count">${item.count}</span>
+          <button class="btn-count" onclick="adjust('${item.barcode}',1)">+</button>
+        </div>
+        <button class="btn-del" onclick="deleteItem('${item.barcode}')" title="ลบ">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function flashCard(barcode) {
+    const el = document.getElementById('card-' + barcode);
+    if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+  }
+
+  function adjust(barcode, delta) {
+    const item = items.find(i => i.barcode === barcode);
+    if (!item) return;
+    item.count = Math.max(0, item.count + delta);
+    save(); render();
+  }
+
+  function deleteItem(barcode) {
+    items = items.filter(i => i.barcode !== barcode);
+    save(); render();
+  }
+
+  function clearAll() {
+    if (!items.length) return;
+    if (!confirm('ล้างข้อมูลทั้งหมด?')) return;
+    items = []; save(); render();
+    setStatus('ล้างข้อมูลแล้ว');
+  }
+
+  function exportCSV() {
+    if (!items.length) { alert('ไม่มีข้อมูล'); return; }
+    const csv = Papa.unparse(items.map(i => ({
+      Barcode: i.barcode, Name: i.name, Detail: i.detail || '', Count: i.count
+    })));
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'stock_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  function onScanSuccess(code) {
+    if (scanCooldown) return;
+    scanCooldown = true;
+    setTimeout(() => scanCooldown = false, 1500);
+
+    vibrate();
+    const existing = items.find(i => i.barcode === code);
+    if (existing) {
+      existing.count++;
+      save(); render();
+      flashCard(code);
+      setStatus(`${existing.name} · นับแล้ว ${existing.count} ชิ้น`, 'success');
+    } else {
+      pendingBarcode = code;
+      document.getElementById('modalBarcode').textContent = code;
+      document.getElementById('inputName').value = '';
+      document.getElementById('inputDetail').value = '';
+      document.getElementById('modal').classList.add('show');
+      setTimeout(() => document.getElementById('inputName').focus(), 300);
+      setStatus('พบรหัสใหม่ กรุณากรอกข้อมูล', 'new');
+    }
+  }
+
+  function saveItem() {
+    const name = document.getElementById('inputName').value.trim();
+    if (!name) { document.getElementById('inputName').focus(); return; }
+    const detail = document.getElementById('inputDetail').value.trim();
+    items.unshift({ barcode: pendingBarcode, name, detail, count: 1 });
+    save(); render();
+    setStatus(`เพิ่ม ${name} แล้ว`, 'success');
+    closeModal();
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    pendingBarcode = null;
+  }
+
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  async function toggleScanner() {
+    const btn = document.getElementById('scanBtn');
+    const ph = document.getElementById('placeholder');
+    const rd = document.getElementById('reader');
+
+    if (!scanning) {
+      btn.textContent = 'หยุดสแกน';
+      btn.classList.add('active');
+      ph.style.display = 'none';
+      rd.style.display = 'block';
+
+      scanner = new Html5Qrcode('reader');
+      try {
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 260, height: 120 }, aspectRatio: 1.6 },
+          onScanSuccess
+        );
+        scanning = true;
+        setStatus('กำลังสแกน...');
+      } catch (e) {
+        rd.style.display = 'none';
+        ph.style.display = 'flex';
+        btn.textContent = 'เริ่มสแกน';
+        btn.classList.remove('active');
+        setStatus('ไม่สามารถเปิดกล้องได้');
+        scanner = null;
+      }
+    } else {
+      btn.textContent = 'เริ่มสแกน';
+      btn.classList.remove('active');
+      try { await scanner.stop(); } catch(e){}
+      scanner = null;
+      scanning = false;
+      rd.style.display = 'none';
+      ph.style.display = 'flex';
+      setStatus('หยุดสแกนแล้ว');
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>
