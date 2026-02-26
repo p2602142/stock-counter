@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-  <title>Stock Counter Pro</title>
+  <title>Stock Counter Pro v3</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
@@ -21,13 +21,11 @@
     }
     .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; }
     
-    /* Header */
     .header { padding: 20px; background: #fff; border-bottom: 1px solid var(--border); }
     .header-top { display: flex; justify-content: space-between; align-items: center; }
     .app-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
     .total-badge { background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 
-    /* Scanner Section */
     .scanner-section { padding: 16px; background: #fff; }
     #scannerWrap { 
         background: #000; border-radius: 16px; overflow: hidden; position: relative; 
@@ -37,20 +35,24 @@
       height: 180px; display: flex; flex-direction: column; align-items: center; 
       justify-content: center; color: #888; background: #f9f9f9; font-weight: 500;
     }
+    
+    .scanner-controls { display: flex; gap: 8px; margin-top: 10px; }
     .scan-toggle { 
-        width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px;
+        flex: 2; padding: 12px; border-radius: 12px;
         border: 1.5px solid var(--accent); background: #fff; font-weight: 700; cursor: pointer;
+    }
+    .btn-upload {
+        flex: 1; padding: 12px; border-radius: 12px;
+        border: 1.5px solid #ccc; background: #f5f5f5; font-weight: 700; cursor: pointer; font-size: 11px;
     }
     .scan-toggle.active { background: #ef4444; border-color: #ef4444; color: #fff; }
 
-    /* Search Bar */
     .search-container { padding: 0 16px 12px; }
     .search-input {
         width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border);
         background: #f1f1f1; font-size: 14px; outline: none;
     }
 
-    /* Items List */
     .table-section { padding: 0 16px 100px; }
     .table-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-top: 1px solid #eee; }
     .table-title { font-size: 12px; font-weight: 700; color: #999; text-transform: uppercase; }
@@ -70,7 +72,6 @@
     }
     .item-count { font-size: 15px; font-weight: 700; min-width: 25px; text-align: center; }
 
-    /* Footer Actions */
     .footer-actions {
         position: fixed; bottom: 0; width: 100%; max-width: 430px; 
         background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
@@ -79,7 +80,6 @@
     .btn-footer { flex: 1; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: #fff; }
     .btn-csv { background: var(--accent); color: #fff; border: none; }
 
-    /* Modal */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
       display: none; align-items: flex-end; justify-content: center; z-index: 1000;
@@ -112,15 +112,19 @@
   <div class="scanner-section">
     <div id="scannerWrap">
       <div class="scanner-placeholder" id="placeholder">
-        <span>TAP TO START SCANNING</span>
+        <span>READY FOR BARCODE</span>
       </div>
       <div id="reader"></div>
     </div>
-    <button class="scan-toggle" id="scanBtn" onclick="toggleScanner()">START SCANNER</button>
+    <div class="scanner-controls">
+        <button class="scan-toggle" id="scanBtn" onclick="toggleScanner()">LIVE CAMERA</button>
+        <button class="btn-upload" onclick="document.getElementById('fileInput').click()">UPLOAD PHOTO</button>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFromFile(event)">
+    </div>
   </div>
 
   <div class="search-container">
-    <input type="text" class="search-input" id="searchInput" placeholder="SEARCH BY NAME OR BARCODE" oninput="render()">
+    <input type="text" class="search-input" id="searchInput" placeholder="SEARCH ITEMS..." oninput="render()">
   </div>
 
   <div class="table-section">
@@ -148,16 +152,16 @@
     </div>
     <div class="form-group">
       <label class="form-label">DETAIL / UNIT</label>
-      <input class="form-input" id="inputDetail" placeholder="Enter detail (optional)">
+      <input class="form-input" id="inputDetail" placeholder="Enter detail">
     </div>
     
-    <button class="btn-primary" id="saveBtn" onclick="saveItem()">SAVE CHANGES</button>
+    <button class="btn-primary" id="saveBtn" onclick="saveItem()">SAVE</button>
     <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer; font-weight:600;">CANCEL</button>
   </div>
 </div>
 
 <script>
-  const STORAGE_KEY = 'stock_pro_v2_no_icons';
+  const STORAGE_KEY = 'stock_pro_v3_photo';
   let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   let html5QrCode = null;
   let isScanning = false;
@@ -172,17 +176,12 @@
   function render() {
     const list = document.getElementById('itemsList');
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    
-    const filtered = items.filter(i => 
-      i.name.toLowerCase().includes(searchTerm) || 
-      i.barcode.toLowerCase().includes(searchTerm)
-    );
-
+    const filtered = items.filter(i => i.name.toLowerCase().includes(searchTerm) || i.barcode.toLowerCase().includes(searchTerm));
     const total = items.reduce((s, i) => s + i.count, 0);
     document.getElementById('totalBadge').textContent = total + ' ITEMS';
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div style="text-align:center; padding:40px; color:#ccc; font-size:12px; letter-spacing:1px;">NO DATA FOUND</div>`;
+      list.innerHTML = `<div style="text-align:center; padding:40px; color:#ccc; font-size:12px;">NO DATA</div>`;
       return;
     }
 
@@ -197,7 +196,7 @@
           <span class="item-count">${item.count}</span>
           <button class="btn-count" onclick="adjust('${item.barcode}', 1)">+</button>
         </div>
-        <button onclick="deleteItem('${item.barcode}')" style="border:none; background:none; color:#ddd; margin-left:10px; font-weight:bold; cursor:pointer; padding:5px;">✕</button>
+        <button onclick="deleteItem('${item.barcode}')" style="border:none; background:none; color:#ddd; margin-left:10px; cursor:pointer;">✕</button>
       </div>
     `).join('');
   }
@@ -241,34 +240,31 @@
   }
 
   function deleteItem(barcode) {
-    if (confirm('DELETE THIS ITEM?')) {
+    if (confirm('DELETE?')) {
       items = items.filter(i => i.barcode !== barcode);
       save();
     }
   }
 
   function confirmClear() {
-    if (confirm('CLEAR ALL DATA? THIS ACTION CANNOT BE UNDONE.')) {
+    if (confirm('CLEAR ALL DATA?')) {
       items = [];
       save();
     }
   }
 
+  // --- Live Scanner ---
   async function toggleScanner() {
     const btn = document.getElementById('scanBtn');
     if (!isScanning) {
       html5QrCode = new Html5Qrcode("reader");
       try {
         document.getElementById('placeholder').style.display = 'none';
-        await html5QrCode.start(
-          { facingMode: "environment" }, 
-          { fps: 15, qrbox: { width: 250, height: 120 } },
-          onScanSuccess
-        );
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 120 } }, onScanSuccess);
         isScanning = true;
-        btn.textContent = 'STOP SCANNER';
+        btn.textContent = 'STOP';
         btn.classList.add('active');
-        document.getElementById('statusText').textContent = 'SCANNING...';
+        document.getElementById('statusText').textContent = 'LIVE SCANNING...';
       } catch (err) {
         document.getElementById('placeholder').style.display = 'flex';
       }
@@ -281,12 +277,32 @@
     if (html5QrCode && isScanning) {
       html5QrCode.stop().then(() => {
         isScanning = false;
-        document.getElementById('scanBtn').textContent = 'START SCANNER';
+        document.getElementById('scanBtn').textContent = 'LIVE CAMERA';
         document.getElementById('scanBtn').classList.remove('active');
         document.getElementById('placeholder').style.display = 'flex';
         document.getElementById('statusText').textContent = 'READY';
       });
     }
+  }
+
+  // --- Scan from File ---
+  function scanFromFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    document.getElementById('statusText').textContent = 'ANALYZING PHOTO...';
+    
+    const html5QrCodeFile = new Html5Qrcode("reader", /* verbose= */ false);
+    html5QrCodeFile.scanFile(file, true)
+      .then(decodedText => {
+        onScanSuccess(decodedText);
+        document.getElementById('fileInput').value = ""; // clear input
+      })
+      .catch(err => {
+        alert("ไม่พบ Barcode ในรูปภาพนี้ กรุณาลองใหม่อีกครั้ง");
+        document.getElementById('statusText').textContent = 'READY';
+        document.getElementById('fileInput').value = "";
+      });
   }
 
   function onScanSuccess(decodedText) {
@@ -296,14 +312,13 @@
       existing.count++;
       save();
       document.getElementById('statusText').textContent = 'ADDED: ' + existing.name.toUpperCase();
-      setTimeout(() => document.getElementById('statusText').textContent = 'SCANNING...', 2000);
     } else {
       isEditing = false;
       activeBarcode = decodedText;
-      document.getElementById('modalTitle').textContent = 'NEW CODE DETECTED';
+      document.getElementById('modalTitle').textContent = 'NEW CODE FOUND';
       document.getElementById('modalBarcode').textContent = decodedText;
       document.getElementById('modal').classList.add('show');
-      stopScanner();
+      if (isScanning) stopScanner();
     }
   }
 
