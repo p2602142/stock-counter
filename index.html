@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-  <title>Stock Pro with Audit Log</title>
+  <title>Stock Pro - Clean Version</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   
   <style>
@@ -14,7 +14,7 @@
       --accent: #2563eb;
       --danger: #dc2626;
       --border: #e5e7eb;
-      --nav-height: 65px;
+      --nav-height: 60px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
     body { background: var(--bg); color: #111; }
@@ -27,15 +27,15 @@
 
     /* Scanner Section */
     .scanner-area { padding: 16px; border-bottom: 8px solid #f3f4f6; }
-    #scannerWrap { background: #000; border-radius: 16px; overflow: hidden; height: 160px; position: relative; }
+    #scannerWrap { background: #000; border-radius: 12px; overflow: hidden; height: 160px; position: relative; }
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-    .btn { height: 44px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; transition: 0.2s; }
+    .btn { height: 44px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; transition: 0.2s; text-transform: uppercase; }
     .btn-main { background: var(--primary); color: #fff; }
     .btn-alt { background: #f3f4f6; color: var(--primary); }
 
     /* Search Bar */
     .search-area { padding: 12px 16px; }
-    .search-box { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; }
+    .search-box { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
 
     /* Tabs Content */
     .tab-content { display: none; flex: 1; padding: 0 16px; }
@@ -46,32 +46,29 @@
     .item-info { flex: 1; }
     .item-name { font-weight: 700; font-size: 15px; text-transform: uppercase; }
     .item-meta { font-size: 12px; color: #6b7280; font-family: monospace; }
-    .qty-box { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 4px; border-radius: 10px; }
-    .btn-q { width: 32px; height: 32px; border: none; background: #fff; border-radius: 6px; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .qty-box { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 4px; border-radius: 8px; }
+    .btn-q { width: 32px; height: 32px; border: none; background: #fff; border-radius: 6px; font-weight: 800; }
 
     /* Audit Log Items */
     .log-card { padding: 12px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
     .log-time { font-size: 11px; color: #999; font-weight: 600; margin-bottom: 4px; }
-    .log-msg { font-weight: 500; }
-    .log-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-right: 6px; }
+    .log-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-right: 8px; }
     .tag-add { background: #dcfce7; color: #166534; }
     .tag-edit { background: #dbeafe; color: #1e40af; }
     .tag-del { background: #fee2e2; color: #991b1b; }
 
     /* Navigation Bar */
     nav { position: fixed; bottom: 0; width: 100%; max-width: 480px; height: var(--nav-height); background: #fff; border-top: 1px solid var(--border); display: flex; z-index: 200; }
-    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: none; background: none; color: #999; font-weight: 700; font-size: 11px; cursor: pointer; }
-    .nav-btn.active { color: var(--accent); }
-    .nav-icon { font-size: 20px; margin-bottom: 4px; }
+    .nav-btn { flex: 1; border: none; background: none; color: #999; font-weight: 800; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
+    .nav-btn.active { color: var(--accent); border-top: 2px solid var(--accent); }
 
     /* Modal */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; z-index: 1000; }
     .overlay.show { display: flex; }
-    .modal { background: #fff; width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-width: 480px; margin: 0 auto; }
-    .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 16px; outline: none; background: #f9fafb; }
-    .btn-save { width: 100%; height: 50px; background: var(--primary); color: #fff; border: none; border-radius: 12px; font-weight: 800; }
+    .modal { background: #fff; width: 100%; border-radius: 20px 20px 0 0; padding: 24px; max-width: 480px; margin: 0 auto; }
+    .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; font-size: 16px; outline: none; background: #f9fafb; }
+    .btn-save { width: 100%; height: 50px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-weight: 800; text-transform: uppercase; }
 
-    /* Footer buttons inside Inventory Tab */
     .tab-footer { margin: 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   </style>
 </head>
@@ -80,7 +77,7 @@
 <div class="app">
   <header>
     <div class="header-top">
-      <h1 id="tabTitle" style="font-size: 18px; font-weight: 900;">INVENTORY</h1>
+      <h1 id="tabTitle" style="font-size: 16px; font-weight: 900; letter-spacing: 1px;">INVENTORY</h1>
       <div id="totalBadge" class="total-badge">0 ITEMS</div>
     </div>
   </header>
@@ -89,74 +86,65 @@
     <div class="scanner-area">
       <div id="scannerWrap"><div id="reader"></div></div>
       <div class="btn-grid">
-        <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCAN</button>
+        <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCANNER</button>
         <button class="btn btn-alt" onclick="document.getElementById('fileIn').click()">UPLOAD IMAGE</button>
         <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="decodeFile(this)">
       </div>
     </div>
-
     <div class="search-area">
-      <input type="text" id="searchInput" class="search-box" placeholder="Search products..." oninput="render()">
+      <input type="text" id="searchInput" class="search-box" placeholder="Search product or color..." oninput="render()">
     </div>
-
     <div id="itemsList"></div>
-
     <div class="tab-footer">
       <button class="btn btn-alt" onclick="clearData()">RESET DATA</button>
-      <button class="btn btn-main" onclick="exportTxtReport()">EXPORT TXT</button>
+      <button class="btn btn-main" onclick="exportTxtReport()">EXPORT REPORT</button>
     </div>
   </div>
 
   <div id="auditTab" class="tab-content">
-    <div style="padding: 16px 0; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-weight: 800; font-size: 14px;">RECENT ACTIVITIES</span>
-      <button onclick="clearLogs()" style="border:none; background:none; color:var(--danger); font-weight:700; font-size:12px;">CLEAR LOGS</button>
+    <div style="padding: 16px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee;">
+      <span style="font-weight: 800; font-size: 13px; letter-spacing: 0.5px;">RECENT ACTIVITIES</span>
+      <button onclick="clearLogs()" style="border:none; background:none; color:var(--danger); font-weight:700; font-size:11px;">CLEAR</button>
     </div>
     <div id="logsList"></div>
   </div>
 </div>
 
 <nav>
-  <button class="nav-btn active" onclick="switchTab('inventory', this)">
-    <span class="nav-icon">📦</span>
-    <span>INVENTORY</span>
-  </button>
-  <button class="nav-btn" onclick="switchTab('audit', this)">
-    <span class="nav-icon">📜</span>
-    <span>AUDIT LOG</span>
-  </button>
+  <button class="nav-btn active" onclick="switchTab('inventory', this)">INVENTORY</button>
+  <button class="nav-btn" onclick="switchTab('audit', this)">AUDIT LOG</button>
 </nav>
 
 <div class="overlay" id="modal">
   <div class="modal">
-    <h2 style="margin-bottom: 20px; font-weight: 800;">PRODUCT INFO</h2>
+    <h2 style="margin-bottom: 20px; font-weight: 900; font-size: 18px;">PRODUCT INFO</h2>
     <input class="input" id="inBarcode" readonly style="color: #888;">
     <input class="input" id="inName" placeholder="Product Name *" oninput="validateForm()">
     <input class="input" id="inDetail" placeholder="Color / Size / Detail">
-    <button class="btn-save" id="saveBtn" onclick="saveData()" disabled>SAVE PRODUCT</button>
-    <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#999; margin-top:16px; font-weight:700;">CANCEL</button>
+    <button class="btn-save" id="saveBtn" onclick="saveData()" disabled>SAVE TO STOCK</button>
+    <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#999; margin-top:16px; font-weight:700; font-size:12px;">CANCEL</button>
   </div>
 </div>
 
 <script>
-  let inventory = JSON.parse(localStorage.getItem('stock_v8_inv') || '[]');
-  let logs = JSON.parse(localStorage.getItem('stock_v8_logs') || '[]');
+  let inventory = JSON.parse(localStorage.getItem('stock_v10_inv') || '[]');
+  let logs = JSON.parse(localStorage.getItem('stock_v10_logs') || '[]');
   let html5Scanner = null;
   let isScanning = false;
+  let editingIdx = null;
   const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
   function addLog(type, msg) {
     const time = new Date().toLocaleString('en-GB', { hour12: false });
     logs.unshift({ type, msg, time });
-    if (logs.length > 100) logs.pop(); // Keep last 100 logs
-    localStorage.setItem('stock_v8_logs', JSON.stringify(logs));
+    if (logs.length > 50) logs.pop();
+    localStorage.setItem('stock_v10_logs', JSON.stringify(logs));
     renderLogs();
   }
 
   function switchTab(tab, btn) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    
     document.getElementById(tab + 'Tab').classList.add('active');
     btn.classList.add('active');
     document.getElementById('tabTitle').textContent = tab.toUpperCase();
@@ -169,9 +157,12 @@
     const totalCount = inventory.reduce((s, i) => s + i.count, 0);
     document.getElementById('totalBadge').textContent = `${totalCount} ITEMS`;
 
-    const filtered = inventory.filter(i => i.name.toLowerCase().includes(query) || i.barcode.includes(query));
+    const filtered = inventory.filter(i => 
+      i.name.toLowerCase().includes(query) || (i.detail && i.detail.toLowerCase().includes(query)) || i.barcode.includes(query)
+    );
+    
     if (filtered.length === 0) {
-      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:13px;">No items found</div>`;
+      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:12px;">NO ITEMS FOUND</div>`;
       return;
     }
 
@@ -181,13 +172,13 @@
           <div class="item-name">${item.name}</div>
           <div class="item-meta">${item.barcode} ${item.detail ? '| '+item.detail : ''}</div>
           <div style="margin-top:6px;">
-            <button onclick="startEdit(${idx})" style="border:none; background:none; color:var(--accent); font-size:11px; font-weight:700; margin-right:12px;">EDIT</button>
-            <button onclick="removeItem(${idx})" style="border:none; background:none; color:var(--danger); font-size:11px; font-weight:700;">DELETE</button>
+            <button onclick="startEdit(${idx})" style="border:none; background:none; color:var(--accent); font-size:10px; font-weight:800; margin-right:12px;">EDIT</button>
+            <button onclick="removeItem(${idx})" style="border:none; background:none; color:var(--danger); font-size:10px; font-weight:800;">DELETE</button>
           </div>
         </div>
         <div class="qty-box">
           <button class="btn-q" onclick="adjust(${idx}, -1)">-</button>
-          <span class="qty-val" style="font-weight:800;">${item.count}</span>
+          <span class="qty-val" style="font-weight:800; min-width: 24px; text-align: center;">${item.count}</span>
           <button class="btn-q" onclick="adjust(${idx}, 1)">+</button>
         </div>
       </div>
@@ -197,18 +188,17 @@
   function renderLogs() {
     const list = document.getElementById('logsList');
     if (logs.length === 0) {
-      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:13px;">No activities yet</div>`;
+      list.innerHTML = `<div style="text-align:center; padding:40px; color:#999; font-size:12px;">NO ACTIVITY RECORDED</div>`;
       return;
     }
     list.innerHTML = logs.map(log => `
       <div class="log-card">
         <div class="log-time">${log.time}</div>
-        <div class="log-msg"><span class="log-tag tag-${log.type}">${log.type}</span>${log.msg}</div>
+        <div><span class="log-tag tag-${log.type}">${log.type}</span>${log.msg}</div>
       </div>
     `).join('');
   }
 
-  // --- Scanner Logic ---
   async function toggleScanner() {
     const btn = document.getElementById('scanBtn');
     if (!isScanning) {
@@ -216,9 +206,9 @@
       try {
         await html5Scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 120 } }, onScanSuccess);
         isScanning = true;
-        btn.textContent = "STOP SCAN";
+        btn.textContent = "STOP SCANNER";
         btn.style.background = "var(--danger)";
-      } catch (e) { alert("Camera Error"); }
+      } catch (e) { alert("Camera Access Denied"); }
     } else { stopScanner(); }
   }
 
@@ -226,7 +216,7 @@
     if (html5Scanner) {
       await html5Scanner.stop();
       isScanning = false;
-      document.getElementById('scanBtn').textContent = "LIVE SCAN";
+      document.getElementById('scanBtn').textContent = "LIVE SCANNER";
       document.getElementById('scanBtn').style.background = "var(--primary)";
     }
   }
@@ -237,10 +227,11 @@
     const existingIdx = inventory.findIndex(i => i.barcode === code);
     if (existingIdx !== -1) {
       inventory[existingIdx].count++;
-      addLog('add', `Increased count: ${inventory[existingIdx].name} (Total: ${inventory[existingIdx].count})`);
+      addLog('add', `Added count to ${inventory[existingIdx].name}`);
       save();
     } else {
       stopScanner();
+      editingIdx = null;
       openModal(code);
     }
   }
@@ -251,54 +242,67 @@
     try {
       const res = await s.scanFile(input.files[0], true);
       onScanSuccess(res);
-    } catch (e) { alert("Barcode not found."); }
+    } catch (e) { alert("Barcode scanning failed."); }
     input.value = "";
   }
 
-  // --- Actions ---
   function saveData() {
     const barcode = document.getElementById('inBarcode').value;
     const name = document.getElementById('inName').value.trim();
     const detail = document.getElementById('inDetail').value.trim();
-    inventory.unshift({ barcode, name, detail, count: 1 });
-    addLog('add', `New product created: ${name} [${barcode}]`);
+    if (editingIdx !== null) {
+      inventory[editingIdx] = { ...inventory[editingIdx], name, detail };
+      addLog('edit', `Updated: ${name}`);
+    } else {
+      inventory.unshift({ barcode, name, detail, count: 1 });
+      addLog('add', `Created: ${name}`);
+    }
     save();
     closeModal();
   }
 
-  function adjust(idx, delta) {
+  function startEdit(idx) {
+    editingIdx = idx;
     const item = inventory[idx];
-    item.count = Math.max(0, item.count + delta);
-    addLog('edit', `Adjusted QTY: ${item.name} to ${item.count}`);
+    document.getElementById('inBarcode').value = item.barcode;
+    document.getElementById('inName').value = item.name;
+    document.getElementById('inDetail').value = item.detail || "";
+    document.getElementById('modal').classList.add('show');
+    validateForm();
+  }
+
+  function adjust(idx, delta) {
+    inventory[idx].count = Math.max(0, inventory[idx].count + delta);
+    addLog('edit', `QTY Update: ${inventory[idx].name} to ${inventory[idx].count}`);
     save();
   }
 
   function removeItem(idx) {
     if (confirm("Delete this item?")) {
-      addLog('del', `Removed item: ${inventory[idx].name}`);
+      addLog('del', `Removed: ${inventory[idx].name}`);
       inventory.splice(idx, 1);
       save();
     }
   }
 
   function clearData() {
-    if (confirm("Wipe all inventory data?")) {
-      addLog('del', `Wiped entire inventory`);
+    if (confirm("Reset all inventory?")) {
       inventory = [];
+      addLog('del', `Wiped database`);
       save();
     }
   }
 
   function clearLogs() {
-    if (confirm("Clear all activity logs?")) {
+    if (confirm("Clear history?")) {
       logs = [];
-      localStorage.setItem('stock_v8_logs', JSON.stringify(logs));
+      localStorage.setItem('stock_v10_logs', JSON.stringify(logs));
       renderLogs();
     }
   }
 
   function save() {
-    localStorage.setItem('stock_v8_inv', JSON.stringify(inventory));
+    localStorage.setItem('stock_v10_inv', JSON.stringify(inventory));
     render();
   }
 
@@ -321,16 +325,27 @@
     if (inventory.length === 0) return;
     const now = new Date();
     const dateTime = now.toLocaleString('en-GB');
-    let report = `*** COUNTING REPORT ***\nGenerated: ${dateTime}\n------------------\n`;
-    inventory.forEach(i => {
-      report += `${i.name.padEnd(20)} | QTY: ${String(i.count).padStart(3)} | [${i.barcode}]\n`;
+    let report = "----------------------------------------\n";
+    report += "          COUNTING REPORT               \n";
+    report += "----------------------------------------\n\n";
+    report += `DATE: ${dateTime}\n`;
+    report += "----------------------------------------\n";
+    report += "PRODUCT & DETAIL                 QTY    \n";
+    report += "----------------------------------------\n";
+    inventory.forEach(item => {
+      const detailStr = item.detail ? ` (${item.detail})` : "";
+      report += (item.name + detailStr).toUpperCase() + "\n";
+      report += `[${item.barcode}]`.padEnd(30) + String(item.count).padStart(10) + "\n\n";
     });
-    const blob = new Blob([report], { type: 'text/plain' });
+    report += "----------------------------------------\n";
+    report += `TOTAL ITEMS: ${inventory.reduce((s, i) => s + i.count, 0)}\n`;
+    report += "----------------------------------------\n";
+    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `StockReport_${now.toISOString().slice(0,10)}.txt`;
+    link.download = `Report_${now.toISOString().slice(0,10)}.txt`;
     link.click();
-    addLog('edit', `Exported TXT Report`);
+    addLog('edit', `Exported Report`);
   }
 
   render();
