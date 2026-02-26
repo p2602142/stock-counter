@@ -1,143 +1,161 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-  <title>Stock Counter Pro</title>
+  <title>Stock Counter Pro v2</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   
   <style>
     :root {
-      --bg: #fcfcfb;
-      --border: #e0ddd6;
-      --text: #1a1a1a;
-      --accent: #111;
-      --danger: #ef4444;
-      --success: #22c55e;
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --primary: #1a1a1a;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --border: #e5e7eb;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background: var(--bg); color: var(--text); }
-    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+    body { background: var(--bg); color: #111; overflow-x: hidden; }
+    .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #fff; display: flex; flex-direction: column; }
 
-    header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fff; position: sticky; top: 0; z-index: 100; }
-    header h1 { font-size: 18px; font-weight: 800; }
-    .total-badge { background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    /* Header & Search */
+    header { padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 100; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .total-badge { background: var(--primary); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 800; transition: transform 0.2s; }
+    .total-badge.bump { transform: scale(1.2); }
+    .search-box { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; }
 
-    .action-area { padding: 16px; border-bottom: 8px solid #f8f7f5; }
-    #scannerWrap { background: #000; border-radius: 16px; overflow: hidden; height: 180px; position: relative; border: 1px solid var(--border); margin-bottom: 12px; }
-    .placeholder { height: 100%; display: flex; align-items: center; justify-content: center; color: #888; background: #fafafa; font-size: 13px; font-weight: 600; }
+    /* Scanner Section */
+    .scanner-area { padding: 16px; border-bottom: 8px solid #f3f4f6; }
+    #scannerWrap { background: #000; border-radius: 16px; overflow: hidden; height: 200px; position: relative; }
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .btn { height: 48px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-main { background: var(--primary); color: #fff; }
+    .btn-alt { background: #f3f4f6; color: var(--primary); }
+    .btn:active { transform: scale(0.96); opacity: 0.8; }
+
+    /* Log / Undo Section */
+    .scan-log { padding: 10px 16px; background: #fefce8; border-bottom: 1px solid #fef08a; font-size: 12px; display: none; align-items: center; justify-content: space-between; }
+    .btn-undo { color: var(--danger); font-weight: 700; border: none; background: none; padding: 5px 10px; }
+
+    /* List Section */
+    .list-container { flex: 1; padding: 0 16px 120px; }
+    .item-card { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f3f4f6; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .item-info { flex: 1; }
+    .item-name { font-weight: 700; font-size: 15px; text-transform: uppercase; margin-bottom: 2px; }
+    .item-meta { font-size: 12px; color: #6b7280; font-family: monospace; }
     
-    .btn-group { display: flex; gap: 8px; }
-    .btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; font-size: 13px; transition: 0.2s; }
-    .btn-main { background: var(--accent); color: #fff; }
-    .btn-alt { background: #fff; border: 1.5px solid var(--accent); color: var(--accent); }
+    .qty-box { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 4px; border-radius: 10px; }
+    .btn-q { width: 36px; height: 36px; border: none; background: #fff; border-radius: 8px; font-weight: 800; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .qty-val { min-width: 30px; text-align: center; font-weight: 800; font-size: 16px; }
 
-    .status-bar { padding: 10px 16px; font-size: 11px; color: #666; font-weight: 700; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f0f0f0; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
-    .dot.active { background: var(--success); animation: blink 1.5s infinite; }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-    .list-container { padding: 0 16px 120px; }
-    .item-card { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f0f0f0; gap: 10px; }
-    .item-info { flex: 1; min-width: 0; }
-    .item-name { font-weight: 700; font-size: 14px; text-transform: uppercase; }
-    .item-meta { font-size: 11px; color: #999; font-family: monospace; }
-    
-    .qty-box { display: flex; align-items: center; gap: 6px; background: #f5f5f5; padding: 4px; border-radius: 8px; }
-    .btn-q { width: 32px; height: 32px; border: none; background: #fff; border-radius: 6px; font-weight: 800; cursor: pointer; }
-    .qty-val { min-width: 25px; text-align: center; font-weight: 800; font-size: 14px; }
-
-    .action-links { display: flex; gap: 12px; margin-top: 6px; }
-    .btn-link { font-size: 11px; font-weight: 700; border: none; background: none; cursor: pointer; }
-    .edit { color: #2563eb; }
-    .del { color: var(--danger); }
-
-    .footer { position: fixed; bottom: 0; width: 100%; max-width: 430px; background: #fff; padding: 15px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; z-index: 100; }
-    .btn-foot { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); background: #fff; font-size: 12px; }
-    .btn-csv { background: var(--accent); color: #fff; border: none; }
-
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 1000; }
+    /* Modal */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; z-index: 1000; }
     .overlay.show { display: flex; }
-    .modal { background: #fff; width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-width: 430px; margin: 0 auto; }
-    .label { font-size: 10px; font-weight: 800; color: #bbb; margin-bottom: 6px; display: block; text-transform: uppercase; }
-    .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 16px; background: #fafafa; font-weight: 600; outline: none; }
-    .btn-save { width: 100%; background: var(--accent); color: #fff; padding: 16px; border: none; border-radius: 14px; font-weight: 800; cursor: pointer; }
-    
-    #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; font-weight: 800; font-size: 12px; }
+    .modal { background: #fff; width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-width: 480px; margin: 0 auto; animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 16px; outline: none; background: #f9fafb; }
+    .btn-save { width: 100%; height: 56px; background: var(--primary); color: #fff; border: none; border-radius: 16px; font-weight: 800; font-size: 16px; }
+    .btn-save:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Footer */
+    footer { position: fixed; bottom: 0; width: 100%; max-width: 480px; background: #fff; padding: 16px 20px; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   </style>
 </head>
 <body>
 
-<div id="loading">READING BARCODE...</div>
-
 <div class="app">
   <header>
-    <h1>STOCK COUNTER</h1>
-    <div class="total-badge" id="totalBadge">0 ITEMS</div>
+    <div class="header-top">
+      <h1 style="font-size: 20px; font-weight: 900; letter-spacing: -0.5px;">STOCK PRO</h1>
+      <div id="totalBadge" class="total-badge">0 ITEMS</div>
+    </div>
+    <input type="text" id="searchInput" class="search-box" placeholder="ค้นหาชื่อสินค้า หรือ JANCODE..." oninput="render()">
   </header>
 
-  <div class="action-area">
-    <div id="scannerWrap">
-      <div class="placeholder" id="placeholder">CAMERA READY</div>
-      <div id="reader"></div>
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCAN</button>
-      <button class="btn btn-alt" onclick="document.getElementById('fileInput').click()">UPLOAD PHOTO</button>
-      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="decodeImage(this)">
-    </div>
+  <div class="scan-log" id="scanLog">
+    <span id="logText"></span>
+    <button class="btn-undo" onclick="undoLastScan()">UNDO</button>
   </div>
 
-  <div class="status-bar">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText">READY</span>
+  <div class="scanner-area">
+    <div id="scannerWrap">
+      <div id="reader"></div>
+      <div id="ph" style="height:100%; display:flex; align-items:center; justify-content:center; color:#555; font-weight:700; font-size:13px; background:#f9fafb;">กล้องปิดอยู่</div>
+    </div>
+    <div class="btn-grid">
+      <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">เริ่มสแกนสด</button>
+      <button class="btn btn-alt" onclick="document.getElementById('fileIn').click()">อัปโหลดรูป</button>
+      <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="decodeFile(this)">
+    </div>
   </div>
 
   <div class="list-container" id="itemsList"></div>
 
-  <div class="footer">
-    <button class="btn-foot" onclick="clearAll()">RESET</button>
-    <button class="btn-foot btn-csv" onclick="exportCSV()">EXPORT CSV</button>
-  </div>
+  <footer>
+    <button class="btn btn-alt" onclick="clearData()">ล้างทั้งหมด</button>
+    <button class="btn btn-main" onclick="exportCSV()">ส่งออก EXCEL</button>
+  </footer>
 </div>
 
 <div class="overlay" id="modal">
   <div class="modal">
-    <div style="width: 40px; height: 4px; background: #eee; border-radius: 2px; margin: 0 auto 20px;"></div>
-    <h2 id="modalTitle" style="font-size: 18px; font-weight: 800; margin-bottom: 20px;">ITEM INFO</h2>
-    <label class="label">JANCODE</label>
-    <input class="input" id="inBarcode" readonly style="color:#888;">
-    <label class="label">PRODUCT NAME</label>
-    <input class="input" id="inName" placeholder="Type Product Name...">
-    <label class="label">COLOR / DETAIL</label>
-    <input class="input" id="inDetail" placeholder="Type Color or Detail...">
-    <button class="btn-save" onclick="saveData()">SAVE PRODUCT</button>
-    <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; font-weight:700; font-size:12px;">CANCEL</button>
+    <div style="width: 40px; height: 4px; background: #e5e7eb; border-radius: 2px; margin: 0 auto 20px;"></div>
+    <h2 style="margin-bottom: 20px; font-weight: 800;">พบสินค้าใหม่</h2>
+    <label style="font-size:11px; font-weight:800; color:#999;">JANCODE</label>
+    <input class="input" id="inBarcode" readonly>
+    <label style="font-size:11px; font-weight:800; color:#999;">ชื่อสินค้า *</label>
+    <input class="input" id="inName" placeholder="ระบุชื่อสินค้า..." oninput="validateForm()">
+    <label style="font-size:11px; font-weight:800; color:#999;">สี / รายละเอียด</label>
+    <input class="input" id="inDetail" placeholder="ระบุสีหรือขนาด...">
+    <button class="btn-save" id="saveBtn" onclick="saveData()" disabled>บันทึกข้อมูล</button>
+    <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#999; margin-top:16px; font-weight:700;">ยกเลิก</button>
   </div>
 </div>
 
 <script>
-  let inventory = JSON.parse(localStorage.getItem('stock_v6') || '[]');
-  let html5QrCode = null;
+  let inventory = JSON.parse(localStorage.getItem('stock_v7') || '[]');
+  let lastAction = null;
+  let html5Scanner = null;
   let isScanning = false;
-  let editingIdx = null;
+
+  // --- Audio Feedback ---
+  const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
   function render() {
     const list = document.getElementById('itemsList');
-    document.getElementById('totalBadge').textContent = inventory.reduce((s, i) => s + i.count, 0) + ' ITEMS';
-    if (inventory.length === 0) {
-      list.innerHTML = '<div style="text-align:center; padding:60px; color:#ccc; font-size:12px; font-weight:700;">NO ITEMS</div>';
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    
+    // Animation สำหรับตัวเลขรวม
+    const badge = document.getElementById('totalBadge');
+    const totalCount = inventory.reduce((s, i) => s + i.count, 0);
+    if(badge.textContent !== `${totalCount} ITEMS`) {
+      badge.classList.add('bump');
+      setTimeout(() => badge.classList.remove('bump'), 200);
+    }
+    badge.textContent = `${totalCount} ITEMS`;
+
+    const filtered = inventory.filter(i => 
+      i.name.toLowerCase().includes(query) || i.barcode.includes(query)
+    );
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div style="text-align:center; padding:60px; color:#999; font-size:14px;">ไม่พบรายการสินค้า</div>`;
       return;
     }
-    list.innerHTML = inventory.map((item, idx) => `
+
+    list.innerHTML = filtered.map((item, idx) => `
       <div class="item-card">
         <div class="item-info">
           <div class="item-name">${item.name}</div>
-          <div class="item-meta">${item.barcode} | ${item.detail || '-'}</div>
-          <div class="action-links">
-            <button class="btn-link edit" onclick="startEdit(${idx})">EDIT</button>
-            <button class="btn-link del" onclick="removeItem(${idx})">REMOVE</button>
+          <div class="item-meta">${item.barcode} ${item.detail ? '• '+item.detail : ''}</div>
+          <div style="margin-top:8px;">
+            <button onclick="editItem(${idx})" style="border:none; background:none; color:var(--accent); font-size:12px; font-weight:700; margin-right:12px;">แก้ไข</button>
+            <button onclick="removeItem(${idx})" style="border:none; background:none; color:var(--danger); font-size:12px; font-weight:700;">ลบ</button>
           </div>
         </div>
         <div class="qty-box">
@@ -149,88 +167,101 @@
     `).join('');
   }
 
-  // --- Image Upload Decode ---
-  async function decodeImage(input) {
-    if (!input.files || !input.files[0]) return;
-    document.getElementById('loading').style.display = 'flex';
-    
-    const tempScanner = new Html5Qrcode("reader");
-    try {
-      const result = await tempScanner.scanFile(input.files[0], true);
-      onScanSuccess(result);
-    } catch (err) {
-      alert("No barcode found in this image. Please ensure it's clear.");
-    } finally {
-      document.getElementById('loading').style.display = 'none';
-      input.value = "";
-    }
-  }
-
-  // --- Live Scanner ---
+  // --- Core Scanner Logic ---
   async function toggleScanner() {
     const btn = document.getElementById('scanBtn');
     if (!isScanning) {
-      html5QrCode = new Html5Qrcode("reader");
-      document.getElementById('placeholder').style.display = 'none';
+      html5Scanner = new Html5Qrcode("reader");
+      document.getElementById('ph').style.display = 'none';
       try {
-        await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 120 } }, onScanSuccess);
+        await html5Scanner.start(
+          { facingMode: "environment" },
+          { fps: 15, qrbox: { width: 250, height: 120 } },
+          onScanSuccess
+        );
         isScanning = true;
-        btn.textContent = "STOP";
-        document.getElementById('statusDot').classList.add('active');
-      } catch (err) { alert("Camera Error"); }
+        btn.textContent = "หยุดสแกน";
+        btn.style.background = "var(--danger)";
+      } catch (e) { alert("ไม่สามารถเข้าถึงกล้องได้: " + e); }
     } else { stopScanner(); }
   }
 
   async function stopScanner() {
-    if (html5QrCode) {
-      await html5QrCode.stop();
+    if (html5Scanner) {
+      await html5Scanner.stop();
       isScanning = false;
-      document.getElementById('scanBtn').textContent = "LIVE SCAN";
-      document.getElementById('statusDot').classList.remove('active');
-      document.getElementById('placeholder').style.display = 'flex';
+      document.getElementById('scanBtn').textContent = "เริ่มสแกนสด";
+      document.getElementById('scanBtn').style.background = "var(--primary)";
+      document.getElementById('ph').style.display = 'flex';
     }
   }
 
   function onScanSuccess(code) {
+    // Feedback
+    if (navigator.vibrate) navigator.vibrate(100);
+    beep.play();
+
     const existingIdx = inventory.findIndex(i => i.barcode === code);
     if (existingIdx !== -1) {
+      lastAction = { type: 'plus', index: existingIdx };
       inventory[existingIdx].count++;
+      showLog(`สแกนสำเร็จ: ${inventory[existingIdx].name} (+1)`);
       save();
-      if (navigator.vibrate) navigator.vibrate(80);
-      document.getElementById('statusText').textContent = "ADDED: " + inventory[existingIdx].name;
     } else {
-      if (isScanning) stopScanner();
-      editingIdx = null;
-      document.getElementById('inBarcode').value = code;
-      document.getElementById('inName').value = "";
-      document.getElementById('inDetail').value = "";
-      document.getElementById('modal').classList.add('show');
+      stopScanner();
+      openModal(code);
     }
   }
 
-  // --- Data Management ---
+  async function decodeFile(input) {
+    if (!input.files[0]) return;
+    const s = new Html5Qrcode("reader");
+    try {
+      const res = await s.scanFile(input.files[0], true);
+      onScanSuccess(res);
+    } catch (e) { alert("ไมพบ Barcode ในรูปภาพ กรุณาลองใหม่อีกครั้ง"); }
+    input.value = "";
+  }
+
+  // --- Helpers ---
+  function showLog(msg) {
+    const log = document.getElementById('scanLog');
+    document.getElementById('logText').textContent = msg;
+    log.style.display = 'flex';
+    setTimeout(() => { log.style.display = 'none'; }, 5000);
+  }
+
+  function undoLastScan() {
+    if (lastAction && lastAction.type === 'plus') {
+      inventory[lastAction.index].count = Math.max(0, inventory[lastAction.index].count - 1);
+      save();
+      document.getElementById('scanLog').style.display = 'none';
+      lastAction = null;
+    }
+  }
+
+  function openModal(code) {
+    document.getElementById('inBarcode').value = code;
+    document.getElementById('inName').value = "";
+    document.getElementById('inDetail').value = "";
+    document.getElementById('modal').classList.add('show');
+    validateForm();
+  }
+
+  function validateForm() {
+    const name = document.getElementById('inName').value.trim();
+    document.getElementById('saveBtn').disabled = name.length < 2;
+  }
+
   function saveData() {
     const barcode = document.getElementById('inBarcode').value;
     const name = document.getElementById('inName').value.trim();
     const detail = document.getElementById('inDetail').value.trim();
-    if (!name) return alert("Enter Name");
-
-    if (editingIdx !== null) {
-      inventory[editingIdx] = { ...inventory[editingIdx], name, detail };
-    } else {
-      inventory.unshift({ barcode, name, detail, count: 1 });
-    }
+    
+    inventory.unshift({ barcode, name, detail, count: 1 });
     save();
     closeModal();
-  }
-
-  function startEdit(idx) {
-    editingIdx = idx;
-    const item = inventory[idx];
-    document.getElementById('inBarcode').value = item.barcode;
-    document.getElementById('inName').value = item.name;
-    document.getElementById('inDetail').value = item.detail;
-    document.getElementById('modal').classList.add('show');
+    showLog(`เพิ่มสินค้าใหม่: ${name}`);
   }
 
   function adjust(idx, delta) {
@@ -239,15 +270,21 @@
   }
 
   function removeItem(idx) {
-    if (confirm("Delete?")) { inventory.splice(idx, 1); save(); }
+    if (confirm("ลบรายการนี้ใช่หรือไม่?")) {
+      inventory.splice(idx, 1);
+      save();
+    }
   }
 
-  function clearAll() {
-    if (confirm("Reset everything?")) { inventory = []; save(); }
+  function clearData() {
+    if (confirm("ล้างข้อมูลสต็อกทั้งหมดใช่หรือไม่? (ย้อนกลับไม่ได้)")) {
+      inventory = [];
+      save();
+    }
   }
 
   function save() {
-    localStorage.setItem('stock_v6', JSON.stringify(inventory));
+    localStorage.setItem('stock_v7', JSON.stringify(inventory));
     render();
   }
 
@@ -255,12 +292,15 @@
 
   function exportCSV() {
     if (inventory.length === 0) return;
+    // เพิ่ม BOM สำหรับ Excel ภาษาไทย
+    const BOM = '\uFEFF';
     const csv = Papa.unparse(inventory);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Stock_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Stock_Report_${new Date().toLocaleDateString('th-TH')}.csv`;
+    a.click();
   }
 
   render();
