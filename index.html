@@ -2,1303 +2,329 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Stock Counter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+  <title>Stock Counter Pro</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
-      --bg: #fafafa;
+      --bg: #f4f4f2;
       --surface: #ffffff;
-      --border: #e8e8e8;
-      --text: #111;
-      --muted: #999;
-      --accent: #111;
-      --accent-light: #f0f0f0;
-      --danger: #e53e3e;
-      --radius: 10px;
-      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+      --accent: #1a1a1a;
+      --border: #e0ddd6;
+      --primary: #2563eb;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg); color: var(--text);
-      font-size: 14px; line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: #1a1a1a;
     }
-
+    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; }
+    
     /* Header */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 10;
-    }
-    header h1 { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
-    header span { font-size: 12px; color: var(--muted); }
+    .header { padding: 20px; background: #fff; border-bottom: 1px solid var(--border); }
+    .header-top { display: flex; justify-content: space-between; align-items: center; }
+    .app-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+    .total-badge { background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 
-    .container { max-width: 560px; margin: 0 auto; padding: 20px 16px; }
-
-    /* Section */
-    .section { margin-bottom: 20px; }
-    .section-label {
-      font-size: 11px; font-weight: 600; letter-spacing: .6px;
-      text-transform: uppercase; color: var(--muted);
-      margin-bottom: 10px;
+    /* Scanner Section */
+    .scanner-section { padding: 16px; background: #fff; }
+    #scannerWrap { 
+        background: #000; border-radius: 16px; overflow: hidden; position: relative; 
+        min-height: 180px; border: 1px solid var(--border);
     }
-
-    /* Card */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+    .scanner-placeholder {
+      height: 180px; display: flex; flex-direction: column; align-items: center; 
+      justify-content: center; color: #888; background: #f9f9f9; font-weight: 500;
     }
-
-    /* Camera */
-    #cam-placeholder {
-      height: 200px; background: #f5f5f5;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 8px; color: var(--muted);
+    .scan-toggle { 
+        width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px;
+        border: 1.5px solid var(--accent); background: #fff; font-weight: 700; cursor: pointer;
     }
-    #cam-placeholder svg { width: 32px; height: 32px; opacity: .4; }
-    #cam-placeholder span { font-size: 13px; }
-    #preview {
-      width: 100%; height: 200px;
-      object-fit: cover; display: none;
+    .scan-toggle.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+    /* Search Bar */
+    .search-container { padding: 0 16px 12px; }
+    .search-input {
+        width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border);
+        background: #f1f1f1; font-size: 14px; outline: none;
     }
 
-    .cam-controls {
-      padding: 12px 14px;
-      border-top: 1px solid var(--border);
-      display: flex; gap: 8px; align-items: center;
+    /* Items List */
+    .table-section { padding: 0 16px 100px; }
+    .table-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-top: 1px solid #eee; }
+    .table-title { font-size: 12px; font-weight: 700; color: #999; text-transform: uppercase; }
+    
+    .item-card { 
+        background: #fff; border: 1px solid var(--border); padding: 14px; 
+        border-radius: 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
     }
-    #status-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #d4d4d4; flex-shrink: 0;
+    .item-info { flex: 1; min-width: 0; cursor: pointer; }
+    .item-name { font-size: 15px; font-weight: 600; }
+    .item-meta { font-size: 11px; color: #999; font-family: monospace; margin-top: 2px; }
+    
+    .item-count-wrap { display: flex; align-items: center; gap: 8px; background: #f5f5f5; padding: 4px; border-radius: 10px; }
+    .btn-count { 
+        width: 28px; height: 28px; border-radius: 6px; border: none;
+        background: #fff; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    #status-dot.active { background: #22c55e; }
-    #status-dot.warn   { background: #f59e0b; }
-    #status-text { font-size: 12px; color: var(--muted); flex: 1; }
+    .item-count { font-size: 15px; font-weight: 700; min-width: 25px; text-align: center; }
 
-    /* Buttons */
-    .btn {
-      padding: 8px 16px; border: none; border-radius: 7px;
-      font-size: 13px; font-weight: 500; cursor: pointer;
-      transition: background .15s, opacity .15s;
-      white-space: nowrap;
+    /* Footer Actions */
+    .footer-actions {
+        position: fixed; bottom: 0; width: 100%; max-width: 430px; 
+        background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
+        padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid var(--border);
     }
-    .btn:active { opacity: .75; }
-    .btn-dark  { background: var(--accent); color: #fff; }
-    .btn-dark:hover { background: #333; }
-    .btn-ghost {
-      background: none; color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover { background: var(--accent-light); }
-    .btn-danger-ghost {
-      background: none; color: var(--danger);
-      border: 1px solid #fca5a5;
-      font-size: 13px; font-weight: 500;
-      padding: 6px 12px; border-radius: 7px;
-      cursor: pointer;
-    }
-    .btn-danger-ghost:hover { background: #fff5f5; }
-    .btn-link {
-      background: none; border: none;
-      color: var(--muted); font-size: 12px;
-      cursor: pointer; padding: 4px 6px;
-      border-radius: 5px;
-    }
-    .btn-link:hover { color: var(--text); background: var(--accent-light); }
-
-    /* Manual input */
-    .manual-wrap {
-      padding: 12px 14px;
-      border-top: 1px solid var(--border);
-      display: flex; gap: 8px;
-    }
-    .manual-wrap input {
-      flex: 1; border: 1px solid var(--border);
-      border-radius: 7px; padding: 7px 11px;
-      font-size: 13px; outline: none; background: var(--bg);
-    }
-    .manual-wrap input:focus { border-color: #999; }
-
-    /* Summary */
-    .summary-row {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 10px; margin-bottom: 20px;
-    }
-    .summary-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-    }
-    .summary-card .num {
-      font-size: 22px; font-weight: 700;
-      letter-spacing: -.5px;
-    }
-    .summary-card .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-    /* Table header */
-    .list-header {
-      padding: 12px 14px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
-    .list-header span { font-size: 13px; font-weight: 600; }
-    .list-actions { display: flex; gap: 4px; }
-
-    /* Table */
-    table { width: 100%; border-collapse: collapse; }
-    thead th {
-      font-size: 11px; font-weight: 500; color: var(--muted);
-      padding: 8px 14px; text-align: left;
-      border-bottom: 1px solid var(--border);
-      background: #fafafa;
-    }
-    tbody tr { transition: background .1s; }
-    tbody tr:hover { background: #fafafa; }
-    tbody td {
-      padding: 10px 14px; font-size: 13px;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    tbody tr:last-child td { border-bottom: none; }
-    .td-barcode { font-family: monospace; font-size: 11px; color: var(--muted); }
-    .td-name { font-weight: 500; }
-    .td-detail { font-size: 11px; color: var(--muted); }
-
-    /* Qty control */
-    .qty-ctrl { display: flex; align-items: center; gap: 8px; }
-    .qty-btn {
-      width: 24px; height: 24px; border-radius: 5px;
-      border: 1px solid var(--border); background: var(--surface);
-      color: var(--text); font-size: 14px; font-weight: 500;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      line-height: 1;
-    }
-    .qty-btn:hover { background: var(--accent-light); }
-    .qty-num { font-size: 13px; font-weight: 600; min-width: 24px; text-align: center; }
-    .del-row-btn {
-      background: none; border: none; color: #ccc;
-      cursor: pointer; font-size: 15px; padding: 2px 4px;
-      border-radius: 4px;
-    }
-    .del-row-btn:hover { color: var(--danger); background: #fff5f5; }
-
-    .empty-row td { text-align: center; color: var(--muted); padding: 32px; font-size: 13px; }
+    .btn-footer { flex: 1; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: #fff; }
+    .btn-csv { background: var(--accent); color: #fff; border: none; }
 
     /* Modal */
-    .overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,.35); z-index: 50;
-      align-items: flex-end; justify-content: center;
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+      display: none; align-items: flex-end; justify-content: center; z-index: 1000;
     }
-    .overlay.open { display: flex; }
-    @media (min-width: 480px) { .overlay { align-items: center; } }
-
-    .sheet {
-      background: var(--surface);
-      width: 100%; max-width: 440px;
-      border-radius: 16px 16px 0 0;
-      padding: 24px 20px 32px;
-      animation: slideUp .2s ease;
+    .modal-overlay.show { display: flex; }
+    .modal { 
+        background: #fff; width: 100%; max-width: 430px; 
+        border-radius: 24px 24px 0 0; padding: 24px; animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    @media (min-width: 480px) {
-      .sheet { border-radius: 14px; padding: 28px 24px; }
-    }
-    @keyframes slideUp {
-      from { transform: translateY(30px); opacity: 0; }
-      to   { transform: translateY(0);    opacity: 1; }
-    }
-    .sheet-handle {
-      width: 36px; height: 4px; background: var(--border);
-      border-radius: 2px; margin: 0 auto 20px;
-    }
-    @media (min-width: 480px) { .sheet-handle { display: none; } }
-    .sheet h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-    .sheet .sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
-    .field-label {
-      font-size: 11px; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .4px;
-      display: block; margin-bottom: 6px;
-    }
-    .field-input {
-      width: 100%; padding: 9px 12px;
-      border: 1px solid var(--border); border-radius: 8px;
-      font-size: 14px; outline: none; margin-bottom: 14px;
-      background: var(--bg);
-    }
-    .field-input:focus { border-color: #888; }
-    .field-input.err { border-color: var(--danger); }
-    .sheet-actions { display: flex; gap: 8px; margin-top: 4px; }
-    .sheet-actions .btn { flex: 1; padding: 10px; }
-
-    /* Confirm sheet */
-    .confirm-icon { font-size: 28px; margin-bottom: 10px; }
-    .confirm-body { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
-
-    /* Toast */
-    #toast {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(12px);
-      background: var(--text); color: #fff;
-      padding: 9px 18px; border-radius: 20px;
-      font-size: 13px; opacity: 0; pointer-events: none;
-      transition: opacity .2s, transform .2s;
-      white-space: nowrap; z-index: 100;
-    }
-    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .form-group { margin-bottom: 15px; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; color: #888; margin-bottom: 5px; }
+    .form-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; font-size: 16px; background: #f9f9f9; }
+    .btn-primary { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 14px; font-weight: 700; margin-top: 10px; cursor: pointer; }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>Stock Counter</h1>
-  <span>Barcode Inventory</span>
-</header>
-
-<div class="container">
-
-  <!-- Scanner -->
-  <div class="section">
-    <div class="section-label">Scanner</div>
-    <div class="card">
-      <div id="cam-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
-          <rect x="7" y="7" width="10" height="10" rx="1"/>
-        </svg>
-        <span>กดเริ่มสแกนเพื่อเปิดกล้อง</span>
-      </div>
-      <video id="preview" autoplay playsinline></video>
-
-      <div class="cam-controls">
-        <div id="status-dot"></div>
-        <span id="status-text">พร้อมใช้งาน</span>
-        <button class="btn btn-dark" id="btn-scan">เริ่มสแกน</button>
-        <button class="btn btn-ghost" id="btn-stop" style="display:none">หยุด</button>
-      </div>
-
-      <!-- Manual / USB Input -->
-      <div class="manual-wrap">
-        <input type="text" id="manual-input" placeholder="พิมพ์หรือสแกน Barcode ด้วย USB Scanner…"/>
-        <button class="btn btn-ghost" id="btn-manual">เพิ่ม</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Summary -->
-  <div class="summary-row">
-    <div class="summary-card">
-      <div class="num" id="sum-sku">0</div>
-      <div class="lbl">Total SKU</div>
-    </div>
-    <div class="summary-card">
-      <div class="num" id="sum-qty">0</div>
-      <div class="lbl">Total Quantity</div>
-    </div>
-  </div>
-
-  <!-- Product List -->
-  <div class="section">
-    <div class="card">
-      <div class="list-header">
-        <span>รายการสินค้า</span>
-        <div class="list-actions">
-          <button class="btn-link" id="btn-export">↓ CSV</button>
-          <button class="btn-link" id="btn-clear" style="color:#e53e3e">ล้างทั้งหมด</button>
-        </div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Barcode</th>
-            <th>ชื่อสินค้า</th>
-            <th>จำนวน</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="product-list">
-          <tr class="empty-row"><td colspan="4">ยังไม่มีรายการสินค้า</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div>
-
-<!-- New Product Sheet -->
-<div class="overlay" id="new-modal">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h3>พบรหัสใหม่</h3>
-    <p class="sub" id="modal-bc-label">Barcode: –</p>
-    <label class="field-label">ชื่อสินค้า *</label>
-    <input class="field-input" type="text" id="modal-name" placeholder="ชื่อสินค้า"/>
-    <label class="field-label">รายละเอียด <span style="font-weight:400;text-transform:none;letter-spacing:0">(หน่วย / ขนาด / หมวดหมู่)</span></label>
-    <input class="field-input" type="text" id="modal-detail" placeholder="เช่น ชิ้น, กล่อง, อาหาร…"/>
-    <div class="sheet-actions">
-      <button class="btn btn-dark" id="modal-ok">เพิ่มสินค้าและเริ่มนับ</button>
-      <button class="btn btn-ghost" id="modal-cancel">ยกเลิก</button>
-    </div>
-  </div>
-</div>
-
-<!-- Confirm Clear Sheet -->
-<div class="overlay" id="confirm-modal">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="confirm-icon">🗑</div>
-    <h3>ล้างข้อมูลทั้งหมด?</h3>
-    <p class="confirm-body">รายการสินค้าและจำนวนนับทั้งหมดจะถูกลบออก<br>การกระทำนี้ไม่สามารถย้อนกลับได้</p>
-    <div class="sheet-actions">
-      <button class="btn btn-ghost" id="confirm-no">ยกเลิก</button>
-      <button class="btn" id="confirm-yes" style="background:var(--danger);color:#fff;flex:1">ล้างข้อมูล</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.20.0/zxing.min.js"></script>
-<script>
-const KEY = 'stock_v1';
-let products = {};
-let pending = null, scanning = false, reader = null;
-
-// ── Storage ──
-const load = () => { try { products = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { products = {}; } };
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(products)); } catch { toast('บันทึกไม่สำเร็จ'); } };
-
-// ── Render ──
-function render() {
-  const tb = document.getElementById('product-list');
-  const keys = Object.keys(products);
-  if (!keys.length) {
-    tb.innerHTML = '<tr class="empty-row"><td colspan="4">ยังไม่มีรายการสินค้า</td></tr>';
-  } else {
-    tb.innerHTML = keys.map(bc => {
-      const p = products[bc];
-      return `<tr>
-        <td class="td-barcode">${bc}</td>
-        <td><div class="td-name">${p.name}</div>${p.detail ? `<div class="td-detail">${p.detail}</div>` : ''}</td>
-        <td><div class="qty-ctrl">
-          <button class="qty-btn" onclick="adj('${bc}',-1)">−</button>
-          <span class="qty-num">${p.qty}</span>
-          <button class="qty-btn" onclick="adj('${bc}',1)">+</button>
-        </div></td>
-        <td><button class="del-row-btn" onclick="del('${bc}')">×</button></td>
-      </tr>`;
-    }).join('');
-  }
-  document.getElementById('sum-sku').textContent = keys.length;
-  document.getElementById('sum-qty').textContent = keys.reduce((s,k) => s + products[k].qty, 0);
-}
-
-// ── Barcode handler ──
-function onBarcode(bc) {
-  bc = bc.trim(); if (!bc) return;
-  if (products[bc]) {
-    products[bc].qty++;
-    save(); render();
-    setStatus(`${products[bc].name} (${products[bc].qty})`, 'active');
-    toast(`+1  ${products[bc].name}`);
-  } else {
-    pending = bc;
-    document.getElementById('modal-bc-label').textContent = `Barcode: ${bc}`;
-    document.getElementById('modal-name').value = '';
-    document.getElementById('modal-detail').value = '';
-    document.getElementById('modal-name').classList.remove('err');
-    document.getElementById('new-modal').classList.add('open');
-    setTimeout(() => document.getElementById('modal-name').focus(), 120);
-  }
-}
-
-// ── Camera ──
-document.getElementById('btn-scan').addEventListener('click', startScan);
-document.getElementById('btn-stop').addEventListener('click', stopScan);
-
-async function startScan() {
-  if (scanning) return;
-  try {
-    if (typeof ZXing === 'undefined') throw new Error('ZXing not loaded');
-    reader = new ZXing.BrowserMultiFormatReader();
-    const devs = await reader.listVideoInputDevices();
-    if (!devs.length) { setStatus('ไม่พบกล้อง', 'err'); return; }
-    const id = devs[devs.length - 1].deviceId;
-    document.getElementById('cam-placeholder').style.display = 'none';
-    document.getElementById('preview').style.display = 'block';
-    document.getElementById('btn-scan').style.display = 'none';
-    document.getElementById('btn-stop').style.display = '';
-    scanning = true; setStatus('กำลังสแกน…', 'warn');
-    await reader.decodeFromVideoDevice(id, 'preview', (res) => {
-      if (!res) return;
-      onBarcode(res.getText());
-      reader.reset(); scanning = false;
-      setTimeout(startScan, 1500);
-    });
-  } catch(e) { setStatus('เปิดกล้องไม่ได้', 'err'); }
-}
-
-function stopScan() {
-  if (reader) { reader.reset(); reader = null; }
-  scanning = false;
-  document.getElementById('preview').style.display = 'none';
-  document.getElementById('cam-placeholder').style.display = 'flex';
-  document.getElementById('btn-scan').style.display = '';
-  document.getElementById('btn-stop').style.display = 'none';
-  setStatus('หยุดสแกน', '');
-}
-
-// ── Manual input ──
-const mi = document.getElementById('manual-input');
-document.getElementById('btn-manual').addEventListener('click', () => { onBarcode(mi.value); mi.value = ''; mi.focus(); });
-mi.addEventListener('keydown', e => { if (e.key === 'Enter') { onBarcode(mi.value); mi.value = ''; } });
-
-// ── New product modal ──
-document.getElementById('modal-ok').addEventListener('click', () => {
-  const name = document.getElementById('modal-name').value.trim();
-  if (!name) { document.getElementById('modal-name').classList.add('err'); return; }
-  products[pending] = { name, detail: document.getElementById('modal-detail').value.trim(), qty: 1 };
-  save(); render();
-  document.getElementById('new-modal').classList.remove('open');
-  toast(`เพิ่ม ${name} แล้ว`);
-  setStatus(`เพิ่ม ${name}`, 'active');
-  pending = null;
-});
-document.getElementById('modal-cancel').addEventListener('click', () => {
-  document.getElementById('new-modal').classList.remove('open'); pending = null;
-});
-
-// ── Confirm clear ──
-document.getElementById('btn-clear').addEventListener('click', () => document.getElementById('confirm-modal').classList.add('open'));
-document.getElementById('confirm-no').addEventListener('click', () => document.getElementById('confirm-modal').classList.remove('open'));
-document.getElementById('confirm-yes').addEventListener('click', () => {
-  products = {}; save(); render();
-  document.getElementById('confirm-modal').classList.remove('open');
-  toast('ล้างข้อมูลแล้ว'); setStatus('พร้อมใช้งาน', '');
-});
-
-// ── Qty / Delete ──
-function adj(bc, d) { if (!products[bc]) return; products[bc].qty = Math.max(0, products[bc].qty + d); save(); render(); }
-function del(bc) { if (!products[bc]) return; const n = products[bc].name; delete products[bc]; save(); render(); toast(`ลบ ${n} แล้ว`); }
-
-// ── Export CSV ──
-document.getElementById('btn-export').addEventListener('click', () => {
-  const keys = Object.keys(products);
-  if (!keys.length) { toast('ไม่มีข้อมูล'); return; }
-  const rows = [['Barcode','ชื่อสินค้า','จำนวน','รายละเอียด'],
-    ...keys.map(bc => [bc, products[bc].name, products[bc].qty, products[bc].detail || ''])];
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'})),
-    download: `stock_${new Date().toISOString().slice(0,10)}.csv`
-  });
-  a.click(); URL.revokeObjectURL(a.href);
-  toast('ดาวน์โหลด CSV แล้ว');
-});
-
-// ── Helpers ──
-function setStatus(msg, type) {
-  document.getElementById('status-text').textContent = msg || 'พร้อมใช้งาน';
-  const d = document.getElementById('status-dot');
-  d.className = type ? `${type}` : '';
-}
-let _t;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(_t); _t = setTimeout(() => el.classList.remove('show'), 2000);
-}
-
-// ── Init ──
-load(); render();
-</script>
-</body>
-</html>      align-items: center; justify-content: center; color: #555; gap: 8px;
-    }
-    .cam-placeholder svg { width: 48px; height: 48px; }
-
-    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
-    .btn {
-      flex: 1; padding: 10px; border: none; border-radius: 8px;
-      font-size: 0.9rem; cursor: pointer; font-weight: 600; transition: opacity .2s;
-    }
-    .btn:active { opacity: 0.75; }
-    .btn-primary { background: #4f46e5; color: #fff; }
-    .btn-danger  { background: #ef4444; color: #fff; }
-    .btn-outline {
-      background: #fff; color: #4f46e5;
-      border: 1.5px solid #4f46e5;
-    }
-    .btn-sm { flex: none; padding: 6px 14px; font-size: 0.8rem; }
-
-    /* ── Manual Input ── */
-    .manual-row { display: flex; gap: 8px; margin-top: 10px; }
-    .manual-row input {
-      flex: 1; padding: 9px 12px; border: 1.5px solid #ddd;
-      border-radius: 8px; font-size: 0.9rem; outline: none;
-    }
-    .manual-row input:focus { border-color: #4f46e5; }
-
-    /* ── Summary ── */
-    .summary {
-      display: flex; gap: 12px; margin-bottom: 14px;
-    }
-    .summary-box {
-      flex: 1; background: #fff; border-radius: 12px;
-      padding: 12px 16px; text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    }
-    .summary-box .num { font-size: 1.6rem; font-weight: 700; color: #4f46e5; }
-    .summary-box .lbl { font-size: 0.72rem; color: #888; margin-top: 2px; }
-
-    /* ── Table ── */
-    .table-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .table-header h2 { font-size: 0.95rem; font-weight: 700; }
-    .icon-btn {
-      background: none; border: none; cursor: pointer;
-      font-size: 0.82rem; color: #4f46e5; font-weight: 600; padding: 4px 8px;
-      border-radius: 6px;
-    }
-    .icon-btn:hover { background: #eef2ff; }
-    .icon-btn.red { color: #ef4444; }
-    .icon-btn.red:hover { background: #fef2f2; }
-
-    table { width: 100%; border-collapse: collapse; }
-    thead th {
-      text-align: left; font-size: 0.75rem;
-      color: #888; padding: 6px 8px; border-bottom: 1px solid #eee;
-    }
-    tbody tr:hover { background: #f9f9ff; }
-    tbody td { padding: 9px 8px; font-size: 0.88rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
-    .barcode-cell { font-family: monospace; color: #666; font-size: 0.78rem; }
-    .qty-cell { display: flex; align-items: center; gap: 6px; }
-    .qty-btn {
-      width: 26px; height: 26px; border-radius: 6px; border: none;
-      background: #eef2ff; color: #4f46e5; font-size: 1rem;
-      cursor: pointer; font-weight: 700; line-height: 1;
-    }
-    .qty-btn:hover { background: #4f46e5; color: #fff; }
-    .qty-num { min-width: 28px; text-align: center; font-weight: 700; }
-    .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; }
-    .del-btn:hover { color: #ef4444; }
-    .empty-state { text-align: center; color: #bbb; padding: 30px 0; font-size: 0.88rem; }
-
-    /* ── Status ── */
-    #status {
-      font-size: 0.8rem; color: #22c55e; margin-top: 8px;
-      min-height: 18px; text-align: center;
-    }
-    #status.warn { color: #f59e0b; }
-    #status.err  { color: #ef4444; }
-
-    /* ── Modal (New Product) ── */
-    .modal-bg {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5); z-index: 100;
-      align-items: center; justify-content: center;
-    }
-    .modal-bg.open { display: flex; }
-    .modal {
-      background: #fff; border-radius: 16px;
-      padding: 24px; width: 90%; max-width: 380px;
-    }
-    .modal h3 { margin-bottom: 4px; }
-    .modal p  { font-size: 0.82rem; color: #888; margin-bottom: 16px; }
-    .modal label { font-size: 0.82rem; color: #555; display: block; margin-bottom: 4px; }
-    .modal input, .modal textarea {
-      width: 100%; padding: 9px 12px; border: 1.5px solid #ddd;
-      border-radius: 8px; font-size: 0.9rem; outline: none;
-      margin-bottom: 12px; resize: none;
-    }
-    .modal input:focus, .modal textarea:focus { border-color: #4f46e5; }
-    .modal .btn-row { margin-top: 4px; }
-
-    /* ── Confirm Modal ── */
-    #confirm-modal .modal { text-align: center; }
-    #confirm-modal .modal p { margin-bottom: 0; }
-    #confirm-modal .icon { font-size: 2.2rem; margin-bottom: 8px; }
-
-    /* ── Toast ── */
-    #toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px);
-      background: #1a1a2e; color: #fff; padding: 10px 20px;
-      border-radius: 20px; font-size: 0.85rem; opacity: 0;
-      transition: all .3s; z-index: 200; white-space: nowrap;
-    }
-    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  </style>
-</head>
-<body>
-
-<header>
-  <h1>📦 Stock Counter</h1>
-  <span>Barcode Inventory</span>
-</header>
-
-<div class="container">
-
-  <!-- Scanner -->
-  <div class="card">
-    <div class="card-title">Scanner</div>
-    <div class="cam-placeholder" id="cam-placeholder">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
-        <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
-        <rect x="7" y="7" width="10" height="10" rx="1"/>
-      </svg>
-      <span>กดเริ่มสแกนเพื่อเปิดกล้อง</span>
-    </div>
-    <video id="preview" autoplay playsinline></video>
-    <div id="status">พร้อมใช้งาน</div>
-
-    <div class="btn-row">
-      <button class="btn btn-primary" id="btn-scan">▦ เริ่มสแกน</button>
-      <button class="btn btn-outline" id="btn-stop" style="display:none">■ หยุด</button>
-    </div>
-
-    <!-- [M-01] Manual / USB Barcode Input -->
-    <div class="manual-row">
-      <input type="text" id="manual-input" placeholder="พิมพ์หรือสแกน Barcode ด้วย USB Scanner..." />
-      <button class="btn btn-primary btn-sm" id="btn-manual">เพิ่ม</button>
-    </div>
-  </div>
-
-  <!-- [M-02] Summary -->
-  <div class="summary">
-    <div class="summary-box">
-      <div class="num" id="sum-sku">0</div>
-      <div class="lbl">Total SKU</div>
-    </div>
-    <div class="summary-box">
-      <div class="num" id="sum-qty">0</div>
-      <div class="lbl">Total Quantity</div>
-    </div>
-  </div>
-
-  <!-- Product List -->
-  <div class="card">
-    <div class="table-header">
-      <h2>รายการสินค้า</h2>
-      <div style="display:flex;gap:6px">
-        <button class="icon-btn" id="btn-export">⬇ CSV</button>
-        <!-- [C-02] ปุ่มล้างข้อมูล → เปิด confirm modal แทน -->
-        <button class="icon-btn red" id="btn-clear">🗑 ล้างทั้งหมด</button>
-      </div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Barcode</th>
-          <th>ชื่อสินค้า</th>
-          <th>จำนวน</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="product-list">
-        <tr><td colspan="4" class="empty-state">ยังไม่มีรายการ</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-</div><!-- /container -->
-
-<!-- ── New Product Modal ── -->
-<div class="modal-bg" id="new-product-modal">
-  <div class="modal">
-    <h3>พบรหัสใหม่</h3>
-    <p id="modal-barcode-label">Barcode: –</p>
-    <label>ชื่อสินค้า *</label>
-    <input type="text" id="modal-name" placeholder="ชื่อสินค้า" />
-    <label>รายละเอียด <span style="color:#aaa">(เช่น หน่วย / ขนาด / หมวดหมู่)</span></label>
-    <textarea id="modal-detail" rows="2" placeholder="หน่วย, ขนาด, หมวดหมู่ ..."></textarea>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="modal-confirm">เพิ่มสินค้าและเริ่มนับ</button>
-      <button class="btn btn-outline" id="modal-cancel">ยกเลิก</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── [C-02] Confirm Clear Modal ── -->
-<div class="modal-bg" id="confirm-modal">
-  <div class="modal">
-    <div class="icon">⚠️</div>
-    <h3>ล้างข้อมูลทั้งหมด?</h3>
-    <p style="margin:8px 0 20px">รายการสินค้าและจำนวนนับทั้งหมดจะถูกลบออก<br>การกระทำนี้ไม่สามารถย้อนกลับได้</p>
-    <div class="btn-row">
-      <button class="btn btn-danger" id="confirm-yes">ล้างข้อมูล</button>
-      <button class="btn btn-outline" id="confirm-no">ยกเลิก</button>
-    </div>
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast"></div>
-
-<!-- ZXing Barcode Library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.20.0/zxing.min.js"></script>
-<script>
-// ═══════════════════════════════════════════════════
-//  STORAGE KEY
-// ═══════════════════════════════════════════════════
-const STORAGE_KEY = 'stock_counter_v1';
-
-// ═══════════════════════════════════════════════════
-//  STATE  (loaded from localStorage on start)
-// ═══════════════════════════════════════════════════
-let products = {};   // { barcode: { name, detail, qty } }
-let pendingBarcode = null;
-let scanning = false;
-let codeReader = null;
-
-// ── [C-01] Load from localStorage ──
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) products = JSON.parse(raw);
-  } catch(e) { products = {}; }
-}
-
-// ── [C-01] Save to localStorage ──
-function saveData() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-  } catch(e) { showToast('⚠️ บันทึกข้อมูลไม่สำเร็จ'); }
-}
-
-// ═══════════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════════
-function render() {
-  const tbody = document.getElementById('product-list');
-  const keys = Object.keys(products);
-
-  if (!keys.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีรายการ</td></tr>';
-    updateSummary();
-    return;
-  }
-
-  tbody.innerHTML = keys.map(bc => {
-    const p = products[bc];
-    return `
-      <tr>
-        <td class="barcode-cell">${bc}</td>
-        <td>
-          <div style="font-weight:600">${p.name}</div>
-          ${p.detail ? `<div style="font-size:.75rem;color:#999">${p.detail}</div>` : ''}
-        </td>
-        <td>
-          <div class="qty-cell">
-            <button class="qty-btn" onclick="changeQty('${bc}',-1)">−</button>
-            <span class="qty-num">${p.qty}</span>
-            <button class="qty-btn" onclick="changeQty('${bc}',1)">+</button>
-          </div>
-        </td>
-        <td><button class="del-btn" onclick="deleteProduct('${bc}')" title="ลบ">✕</button></td>
-      </tr>`;
-  }).join('');
-
-  updateSummary();
-}
-
-// ── [M-02] Summary ──
-function updateSummary() {
-  const keys = Object.keys(products);
-  document.getElementById('sum-sku').textContent = keys.length;
-  document.getElementById('sum-qty').textContent = keys.reduce((s, k) => s + products[k].qty, 0);
-}
-
-// ═══════════════════════════════════════════════════
-//  BARCODE HANDLING
-// ═══════════════════════════════════════════════════
-function handleBarcode(barcode) {
-  barcode = barcode.trim();
-  if (!barcode) return;
-
-  if (products[barcode]) {
-    products[barcode].qty++;
-    saveData();
-    render();
-    setStatus(`✅ นับแล้ว: ${products[barcode].name} (${products[barcode].qty})`, 'ok');
-    showToast(`+1 ${products[barcode].name}`);
-  } else {
-    pendingBarcode = barcode;
-    openNewProductModal(barcode);
-  }
-}
-
-// ═══════════════════════════════════════════════════
-//  CAMERA SCANNER
-// ═══════════════════════════════════════════════════
-const btnScan  = document.getElementById('btn-scan');
-const btnStop  = document.getElementById('btn-stop');
-const preview  = document.getElementById('preview');
-const camPlaceholder = document.getElementById('cam-placeholder');
-
-btnScan.addEventListener('click', startScan);
-btnStop.addEventListener('click', stopScan);
-
-async function startScan() {
-  if (scanning) return;
-  try {
-    if (typeof ZXing === 'undefined') throw new Error('ZXing not loaded');
-    codeReader = new ZXing.BrowserMultiFormatReader();
-    const devices = await codeReader.listVideoInputDevices();
-    if (!devices.length) { setStatus('ไม่พบกล้อง', 'err'); return; }
-
-    const deviceId = devices[devices.length - 1].deviceId; // ใช้กล้องหลัง
-    camPlaceholder.style.display = 'none';
-    preview.style.display = 'block';
-    btnScan.style.display = 'none';
-    btnStop.style.display = '';
-    scanning = true;
-    setStatus('กำลังสแกน...', 'warn');
-
-    await codeReader.decodeFromVideoDevice(deviceId, 'preview', (result, err) => {
-      if (result) {
-        handleBarcode(result.getText());
-        // หยุดสแกนชั่วคราว 1.5 วิ ป้องกันนับซ้ำ
-        codeReader.reset();
-        scanning = false;
-        setTimeout(startScan, 1500);
-      }
-    });
-  } catch(e) {
-    setStatus('เปิดกล้องไม่ได้: ' + e.message, 'err');
-  }
-}
-
-function stopScan() {
-  if (codeReader) { codeReader.reset(); codeReader = null; }
-  scanning = false;
-  preview.style.display = 'none';
-  camPlaceholder.style.display = 'flex';
-  btnScan.style.display = '';
-  btnStop.style.display = 'none';
-  setStatus('หยุดสแกน', 'ok');
-}
-
-// ═══════════════════════════════════════════════════
-//  [M-01] MANUAL / USB INPUT
-// ═══════════════════════════════════════════════════
-const manualInput = document.getElementById('manual-input');
-const btnManual   = document.getElementById('btn-manual');
-
-btnManual.addEventListener('click', () => {
-  const val = manualInput.value.trim();
-  if (!val) return;
-  handleBarcode(val);
-  manualInput.value = '';
-  manualInput.focus();
-});
-
-// รองรับ Enter key (USB Scanner ส่ง Enter หลัง Barcode)
-manualInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') btnManual.click();
-});
-
-// ═══════════════════════════════════════════════════
-//  NEW PRODUCT MODAL
-// ═══════════════════════════════════════════════════
-const newModal = document.getElementById('new-product-modal');
-
-function openNewProductModal(bc) {
-  document.getElementById('modal-barcode-label').textContent = `Barcode: ${bc}`;
-  document.getElementById('modal-name').value = '';
-  document.getElementById('modal-detail').value = '';
-  newModal.classList.add('open');
-  setTimeout(() => document.getElementById('modal-name').focus(), 100);
-}
-
-document.getElementById('modal-confirm').addEventListener('click', () => {
-  const name = document.getElementById('modal-name').value.trim();
-  if (!name) { document.getElementById('modal-name').style.borderColor='#ef4444'; return; }
-  products[pendingBarcode] = {
-    name,
-    detail: document.getElementById('modal-detail').value.trim(),
-    qty: 1
-  };
-  saveData();
-  render();
-  newModal.classList.remove('open');
-  showToast(`✅ เพิ่ม ${name} แล้ว`);
-  setStatus(`✅ เพิ่ม: ${name}`, 'ok');
-  pendingBarcode = null;
-});
-
-document.getElementById('modal-cancel').addEventListener('click', () => {
-  newModal.classList.remove('open');
-  pendingBarcode = null;
-});
-
-// ═══════════════════════════════════════════════════
-//  [C-02] CONFIRM CLEAR MODAL
-// ═══════════════════════════════════════════════════
-const confirmModal = document.getElementById('confirm-modal');
-
-document.getElementById('btn-clear').addEventListener('click', () => {
-  confirmModal.classList.add('open');
-});
-document.getElementById('confirm-no').addEventListener('click', () => {
-  confirmModal.classList.remove('open');
-});
-document.getElementById('confirm-yes').addEventListener('click', () => {
-  products = {};
-  saveData();
-  render();
-  confirmModal.classList.remove('open');
-  showToast('🗑 ล้างข้อมูลแล้ว');
-  setStatus('ล้างข้อมูลทั้งหมดแล้ว', 'warn');
-});
-
-// ═══════════════════════════════════════════════════
-//  [M-03] QTY INLINE EDIT
-// ═══════════════════════════════════════════════════
-function changeQty(bc, delta) {
-  if (!products[bc]) return;
-  products[bc].qty = Math.max(0, products[bc].qty + delta);
-  saveData();
-  render();
-}
-
-function deleteProduct(bc) {
-  if (!products[bc]) return;
-  const name = products[bc].name;
-  delete products[bc];
-  saveData();
-  render();
-  showToast(`ลบ ${name} แล้ว`);
-}
-
-// ═══════════════════════════════════════════════════
-//  EXPORT CSV
-// ═══════════════════════════════════════════════════
-document.getElementById('btn-export').addEventListener('click', () => {
-  const keys = Object.keys(products);
-  if (!keys.length) { showToast('ไม่มีข้อมูล'); return; }
-
-  const rows = [['Barcode','ชื่อสินค้า','จำนวน','รายละเอียด']];
-  keys.forEach(bc => {
-    const p = products[bc];
-    rows.push([bc, p.name, p.qty, p.detail || '']);
-  });
-
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
-  a.download = `stock_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('⬇ ดาวน์โหลด CSV แล้ว');
-});
-
-// ═══════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════
-function setStatus(msg, type='ok') {
-  const el = document.getElementById('status');
-  el.textContent = msg;
-  el.className = type === 'err' ? 'err' : type === 'warn' ? 'warn' : '';
-}
-
-let toastTimer;
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
-}
-
-// ═══════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════
-loadData();
-render();
-</script>
-</body>
-</html>  .table-title{font-size:12px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.5px}
-  .actions{display:flex;gap:6px}
-  .btn-sm{border:1px solid #e0ddd6;background:#fff;color:#555;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s}
-  .btn-sm:hover{background:#f5f4f0}
-  .btn-danger{border-color:#f0ddd9;color:#c0544a}
-  .btn-danger:hover{background:#fdf5f4}
-  .items-list{display:flex;flex-direction:column;gap:6px;padding-bottom:100px}
-  .empty-state{text-align:center;padding:48px 20px;color:#bbb}
-  .empty-icon{font-size:40px;margin-bottom:10px;opacity:.4}
-  .empty-text{font-size:13px}
-  .item-card{background:#fff;border-radius:12px;border:1px solid #e8e6e1;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:all .2s;position:relative;overflow:hidden}
-  .item-card.flash{animation:flash .4s ease}
-  @keyframes flash{0%{background:#fff9ee}50%{background:#fef3d0}100%{background:#fff}}
-  .item-rank{font-size:10px;color:#ccc;font-weight:600;width:16px;flex-shrink:0;text-align:center}
-  .item-info{flex:1;min-width:0}
-  .item-name{font-size:14px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .item-meta{font-size:11px;color:#aaa;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .item-count-wrap{display:flex;align-items:center;gap:6px}
-  .btn-count{width:28px;height:28px;border-radius:8px;border:1px solid #e8e6e1;background:#fafaf8;color:#555;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;transition:all .15s}
-  .btn-count:hover{background:#f0ece4}
-  .item-count{font-size:18px;font-weight:600;color:#2c2c2c;min-width:28px;text-align:center}
-  .btn-del{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:#ddd;cursor:pointer;font-size:14px;transition:color .2s;display:flex;align-items:center;justify-content:center}
-  .btn-del:hover{color:#c0544a}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;max-width:430px;margin:0 auto}
-  .modal-overlay.show{opacity:1;pointer-events:all}
-  .modal{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:24px 20px 36px;transform:translateY(30px);transition:transform .25s;max-height:90vh;overflow-y:auto}
-  .modal-overlay.show .modal{transform:translateY(0)}
-  .modal-handle{width:36px;height:4px;background:#e0ddd6;border-radius:2px;margin:0 auto 20px}
-  .modal-title{font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
-  .modal-barcode{font-size:11px;color:#aaa;margin-bottom:20px;letter-spacing:.5px}
-  .form-group{margin-bottom:14px}
-  .form-label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
-  .form-input{width:100%;border:1px solid #e0ddd6;border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;color:#1a1a1a;background:#fafaf8;outline:none;transition:border-color .2s}
-  .form-input:focus{border-color:#b0a898;background:#fff}
-  .btn-primary{width:100%;background:#2c2c2c;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:8px}
-  .btn-primary:hover{opacity:.85}
-  .btn-cancel{width:100%;background:transparent;color:#aaa;border:none;border-radius:12px;padding:10px;font-size:13px;cursor:pointer;font-family:inherit;margin-top:4px}
-</style>
-</head>
-<body>
 <div class="app">
   <div class="header">
     <div class="header-top">
       <div>
-        <div class="app-title">Stock Counter</div>
-        <div class="app-subtitle">Barcode Inventory</div>
+        <div class="app-title">Stock Pro</div>
+        <div id="statusText" style="font-size: 11px; color: #22c55e; font-weight: 600; margin-top: 2px;">READY</div>
       </div>
       <div class="total-badge" id="totalBadge">0 items</div>
     </div>
   </div>
 
   <div class="scanner-section">
-    <div class="scanner-header">
-      <span class="scanner-label">Scanner</span>
-      <button class="scan-toggle" id="scanBtn" onclick="toggleScanner()">เริ่มสแกน</button>
-    </div>
     <div id="scannerWrap">
       <div class="scanner-placeholder" id="placeholder">
-        <div class="scan-icon">▦</div>
-        <div class="scan-hint">กดเริ่มสแกนเพื่อเปิดกล้อง</div>
+        <span>TAP TO START SCANNING</span>
       </div>
-      <div id="reader" style="display:none"></div>
+      <div id="reader"></div>
     </div>
+    <button class="scan-toggle" id="scanBtn" onclick="toggleScanner()">START SCANNER</button>
   </div>
 
-  <div class="status-bar">
-    <div class="status-dot" id="statusDot"></div>
-    <div class="status-text" id="statusText">พร้อมใช้งาน</div>
+  <div class="search-container">
+    <input type="text" class="search-input" id="searchInput" placeholder="SEARCH BY NAME OR BARCODE" oninput="render()">
   </div>
 
   <div class="table-section">
     <div class="table-header">
-      <span class="table-title">รายการสินค้า</span>
-      <div class="actions">
-        <button class="btn-sm btn-danger" onclick="clearAll()">ล้างทั้งหมด</button>
-        <button class="btn-sm" onclick="exportCSV()">⬇ CSV</button>
-      </div>
+      <span class="table-title">INVENTORY LIST</span>
     </div>
     <div class="items-list" id="itemsList"></div>
+  </div>
+
+  <div class="footer-actions">
+    <button class="btn-footer" onclick="confirmClear()">CLEAR ALL</button>
+    <button class="btn-footer btn-csv" onclick="exportCSV()">EXPORT CSV</button>
   </div>
 </div>
 
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">พบรหัสใหม่</div>
-    <div class="modal-barcode" id="modalBarcode"></div>
+    <div style="width: 40px; height: 5px; background: #eee; border-radius: 10px; margin: 0 auto 20px;"></div>
+    <div id="modalTitle" style="font-size: 20px; font-weight: 800; margin-bottom: 5px;">NEW ITEM</div>
+    <div id="modalBarcode" style="font-family: monospace; color: var(--primary); font-size: 13px; font-weight: 600; margin-bottom: 20px;"></div>
+    
     <div class="form-group">
-      <label class="form-label">ชื่อสินค้า *</label>
-      <input class="form-input" id="inputName" placeholder="เช่น Nylon Pen Case" onkeydown="if(event.key==='Enter')saveItem()">
+      <label class="form-label">PRODUCT NAME</label>
+      <input class="form-input" id="inputName" placeholder="Enter name">
     </div>
     <div class="form-group">
-      <label class="form-label">รายละเอียด</label>
-      <input class="form-input" id="inputDetail" placeholder="เช่น Red / W19×H8×D8cm" onkeydown="if(event.key==='Enter')saveItem()">
+      <label class="form-label">DETAIL / UNIT</label>
+      <input class="form-input" id="inputDetail" placeholder="Enter detail (optional)">
     </div>
-    <button class="btn-primary" onclick="saveItem()">เพิ่มสินค้าและเริ่มนับ</button>
-    <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
+    
+    <button class="btn-primary" id="saveBtn" onclick="saveItem()">SAVE CHANGES</button>
+    <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer; font-weight:600;">CANCEL</button>
   </div>
 </div>
 
 <script>
-  const STORAGE_KEY = 'stock_counter_v1';
+  const STORAGE_KEY = 'stock_pro_v2_no_icons';
   let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  let scanner = null;
-  let scanning = false;
-  let pendingBarcode = null;
-  let scanCooldown = false;
+  let html5QrCode = null;
+  let isScanning = false;
+  let activeBarcode = null;
+  let isEditing = false;
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }
-
-  function vibrate() {
-    if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
-  }
-
-  function setStatus(msg, type = '') {
-    const dot = document.getElementById('statusDot');
-    const txt = document.getElementById('statusText');
-    dot.className = 'status-dot' + (type ? ' ' + type : '');
-    txt.textContent = msg;
-  }
-
-  function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    render();
   }
 
   function render() {
     const list = document.getElementById('itemsList');
-    const total = items.reduce((s, i) => s + i.count, 0);
-    document.getElementById('totalBadge').textContent = total + ' items';
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    const filtered = items.filter(i => 
+      i.name.toLowerCase().includes(searchTerm) || 
+      i.barcode.toLowerCase().includes(searchTerm)
+    );
 
-    if (!items.length) {
-      list.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">ยังไม่มีสินค้า<br>สแกน Barcode เพื่อเริ่มนับ</div></div>`;
+    const total = items.reduce((s, i) => s + i.count, 0);
+    document.getElementById('totalBadge').textContent = total + ' ITEMS';
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div style="text-align:center; padding:40px; color:#ccc; font-size:12px; letter-spacing:1px;">NO DATA FOUND</div>`;
       return;
     }
 
-    list.innerHTML = items.map((item, i) => `
-      <div class="item-card" id="card-${item.barcode}">
-        <div class="item-rank">${i + 1}</div>
-        <div class="item-info">
-          <div class="item-name">${esc(item.name)}</div>
-          <div class="item-meta">${esc(item.barcode)}${item.detail ? ' · ' + esc(item.detail) : ''}</div>
+    list.innerHTML = filtered.map(item => `
+      <div class="item-card">
+        <div class="item-info" onclick="openEdit('${item.barcode}')">
+          <div class="item-name">${item.name.toUpperCase()}</div>
+          <div class="item-meta">${item.barcode} ${item.detail ? '• ' + item.detail.toUpperCase() : ''}</div>
         </div>
         <div class="item-count-wrap">
-          <button class="btn-count" onclick="adjust('${item.barcode}',-1)">−</button>
+          <button class="btn-count" onclick="adjust('${item.barcode}', -1)">-</button>
           <span class="item-count">${item.count}</span>
-          <button class="btn-count" onclick="adjust('${item.barcode}',1)">+</button>
+          <button class="btn-count" onclick="adjust('${item.barcode}', 1)">+</button>
         </div>
-        <button class="btn-del" onclick="deleteItem('${item.barcode}')" title="ลบ">✕</button>
+        <button onclick="deleteItem('${item.barcode}')" style="border:none; background:none; color:#ddd; margin-left:10px; font-weight:bold; cursor:pointer; padding:5px;">✕</button>
       </div>
     `).join('');
   }
 
-  function flashCard(barcode) {
-    const el = document.getElementById('card-' + barcode);
-    if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
-  }
-
   function adjust(barcode, delta) {
     const item = items.find(i => i.barcode === barcode);
-    if (!item) return;
-    item.count = Math.max(0, item.count + delta);
-    save(); render();
-  }
-
-  function deleteItem(barcode) {
-    items = items.filter(i => i.barcode !== barcode);
-    save(); render();
-  }
-
-  function clearAll() {
-    if (!items.length) return;
-    if (!confirm('ล้างข้อมูลทั้งหมด?')) return;
-    items = []; save(); render();
-    setStatus('ล้างข้อมูลแล้ว');
-  }
-
-  function exportCSV() {
-    if (!items.length) { alert('ไม่มีข้อมูล'); return; }
-    const csv = Papa.unparse(items.map(i => ({
-      Barcode: i.barcode, Name: i.name, Detail: i.detail || '', Count: i.count
-    })));
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'stock_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click(); URL.revokeObjectURL(url);
-  }
-
-  function onScanSuccess(code) {
-    if (scanCooldown) return;
-    scanCooldown = true;
-    setTimeout(() => scanCooldown = false, 1500);
-
-    vibrate();
-    const existing = items.find(i => i.barcode === code);
-    if (existing) {
-      existing.count++;
-      save(); render();
-      flashCard(code);
-      setStatus(`${existing.name} · นับแล้ว ${existing.count} ชิ้น`, 'success');
-    } else {
-      pendingBarcode = code;
-      document.getElementById('modalBarcode').textContent = code;
-      document.getElementById('inputName').value = '';
-      document.getElementById('inputDetail').value = '';
-      document.getElementById('modal').classList.add('show');
-      setTimeout(() => document.getElementById('inputName').focus(), 300);
-      setStatus('พบรหัสใหม่ กรุณากรอกข้อมูล', 'new');
+    if (item) {
+      item.count = Math.max(0, item.count + delta);
+      save();
     }
+  }
+
+  function openEdit(barcode) {
+    const item = items.find(i => i.barcode === barcode);
+    if (!item) return;
+    isEditing = true;
+    activeBarcode = barcode;
+    document.getElementById('modalTitle').textContent = 'EDIT ITEM';
+    document.getElementById('modalBarcode').textContent = 'CODE: ' + barcode;
+    document.getElementById('inputName').value = item.name;
+    document.getElementById('inputDetail').value = item.detail || '';
+    document.getElementById('modal').classList.add('show');
   }
 
   function saveItem() {
     const name = document.getElementById('inputName').value.trim();
-    if (!name) { document.getElementById('inputName').focus(); return; }
     const detail = document.getElementById('inputDetail').value.trim();
-    items.unshift({ barcode: pendingBarcode, name, detail, count: 1 });
-    save(); render();
-    setStatus(`เพิ่ม ${name} แล้ว`, 'success');
+    if (!name) return;
+
+    if (isEditing) {
+      const item = items.find(i => i.barcode === activeBarcode);
+      if (item) {
+        item.name = name;
+        item.detail = detail;
+      }
+    } else {
+      items.unshift({ barcode: activeBarcode, name, detail, count: 1 });
+    }
+    save();
     closeModal();
+  }
+
+  function deleteItem(barcode) {
+    if (confirm('DELETE THIS ITEM?')) {
+      items = items.filter(i => i.barcode !== barcode);
+      save();
+    }
+  }
+
+  function confirmClear() {
+    if (confirm('CLEAR ALL DATA? THIS ACTION CANNOT BE UNDONE.')) {
+      items = [];
+      save();
+    }
+  }
+
+  async function toggleScanner() {
+    const btn = document.getElementById('scanBtn');
+    if (!isScanning) {
+      html5QrCode = new Html5Qrcode("reader");
+      try {
+        document.getElementById('placeholder').style.display = 'none';
+        await html5QrCode.start(
+          { facingMode: "environment" }, 
+          { fps: 15, qrbox: { width: 250, height: 120 } },
+          onScanSuccess
+        );
+        isScanning = true;
+        btn.textContent = 'STOP SCANNER';
+        btn.classList.add('active');
+        document.getElementById('statusText').textContent = 'SCANNING...';
+      } catch (err) {
+        document.getElementById('placeholder').style.display = 'flex';
+      }
+    } else {
+      stopScanner();
+    }
+  }
+
+  function stopScanner() {
+    if (html5QrCode && isScanning) {
+      html5QrCode.stop().then(() => {
+        isScanning = false;
+        document.getElementById('scanBtn').textContent = 'START SCANNER';
+        document.getElementById('scanBtn').classList.remove('active');
+        document.getElementById('placeholder').style.display = 'flex';
+        document.getElementById('statusText').textContent = 'READY';
+      });
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    if (navigator.vibrate) navigator.vibrate(80);
+    const existing = items.find(i => i.barcode === decodedText);
+    if (existing) {
+      existing.count++;
+      save();
+      document.getElementById('statusText').textContent = 'ADDED: ' + existing.name.toUpperCase();
+      setTimeout(() => document.getElementById('statusText').textContent = 'SCANNING...', 2000);
+    } else {
+      isEditing = false;
+      activeBarcode = decodedText;
+      document.getElementById('modalTitle').textContent = 'NEW CODE DETECTED';
+      document.getElementById('modalBarcode').textContent = decodedText;
+      document.getElementById('modal').classList.add('show');
+      stopScanner();
+    }
   }
 
   function closeModal() {
     document.getElementById('modal').classList.remove('show');
-    pendingBarcode = null;
+    document.getElementById('inputName').value = '';
+    document.getElementById('inputDetail').value = '';
   }
 
-  document.getElementById('modal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
-
-  async function toggleScanner() {
-    const btn = document.getElementById('scanBtn');
-    const ph = document.getElementById('placeholder');
-    const rd = document.getElementById('reader');
-
-    if (!scanning) {
-      btn.textContent = 'หยุดสแกน';
-      btn.classList.add('active');
-      ph.style.display = 'none';
-      rd.style.display = 'block';
-
-      scanner = new Html5Qrcode('reader');
-      try {
-        await scanner.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 260, height: 120 }, aspectRatio: 1.6 },
-          onScanSuccess
-        );
-        scanning = true;
-        setStatus('กำลังสแกน...');
-      } catch (e) {
-        rd.style.display = 'none';
-        ph.style.display = 'flex';
-        btn.textContent = 'เริ่มสแกน';
-        btn.classList.remove('active');
-        setStatus('ไม่สามารถเปิดกล้องได้');
-        scanner = null;
-      }
-    } else {
-      btn.textContent = 'เริ่มสแกน';
-      btn.classList.remove('active');
-      try { await scanner.stop(); } catch(e){}
-      scanner = null;
-      scanning = false;
-      rd.style.display = 'none';
-      ph.style.display = 'flex';
-      setStatus('หยุดสแกนแล้ว');
-    }
+  function exportCSV() {
+    if (items.length === 0) return;
+    const csv = Papa.unparse(items);
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `STOCK_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
   }
 
   render();
 </script>
+
 </body>
 </html>
