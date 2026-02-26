@@ -3,94 +3,101 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-  <title>Stock Manager AI Pro</title>
+  <title>Stock Counter Pro</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  
   <style>
-    :root { --bg: #fcfcfb; --border: #e0ddd6; --accent: #1a1a1a; }
+    :root {
+      --bg: #fcfcfb;
+      --border: #e0ddd6;
+      --text: #1a1a1a;
+      --accent: #111;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background: var(--bg); color: #1a1a1a; }
-    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; }
-    
-    /* Header */
-    .header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .app-title { font-size: 18px; font-weight: 800; }
+    body { background: var(--bg); color: var(--text); }
+    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+
+    header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fff; position: sticky; top: 0; z-index: 100; }
+    header h1 { font-size: 18px; font-weight: 800; }
     .total-badge { background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 
-    /* Scanner & Upload Section */
-    .action-section { padding: 16px; background: #fff; border-bottom: 8px solid #f8f7f5; }
+    .action-area { padding: 16px; border-bottom: 8px solid #f8f7f5; }
     #scannerWrap { background: #000; border-radius: 16px; overflow: hidden; height: 180px; position: relative; border: 1px solid var(--border); margin-bottom: 12px; }
     .placeholder { height: 100%; display: flex; align-items: center; justify-content: center; color: #888; background: #fafafa; font-size: 13px; font-weight: 600; }
     
     .btn-group { display: flex; gap: 8px; }
-    .btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; font-size: 13px; }
+    .btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; font-size: 13px; transition: 0.2s; }
     .btn-main { background: var(--accent); color: #fff; }
     .btn-alt { background: #fff; border: 1.5px solid var(--accent); color: var(--accent); }
-    .btn-main.active { background: #ef4444; }
 
-    .status-bar { padding: 10px 16px; font-size: 11px; color: #666; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .status-bar { padding: 10px 16px; font-size: 11px; color: #666; font-weight: 700; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f0f0f0; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
-    .dot.active { background: #22c55e; animation: blink 1.5s infinite; }
+    .dot.active { background: var(--success); animation: blink 1.5s infinite; }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    /* List Area */
     .list-container { padding: 0 16px 120px; }
     .item-card { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f0f0f0; gap: 10px; }
     .item-info { flex: 1; min-width: 0; }
-    .item-name { font-weight: 700; font-size: 14px; text-transform: uppercase; margin-bottom: 2px; }
+    .item-name { font-weight: 700; font-size: 14px; text-transform: uppercase; }
     .item-meta { font-size: 11px; color: #999; font-family: monospace; }
     
     .qty-box { display: flex; align-items: center; gap: 6px; background: #f5f5f5; padding: 4px; border-radius: 8px; }
-    .btn-q { width: 30px; height: 30px; border: none; background: #fff; border-radius: 6px; font-weight: 800; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .btn-q { width: 32px; height: 32px; border: none; background: #fff; border-radius: 6px; font-weight: 800; cursor: pointer; }
     .qty-val { min-width: 25px; text-align: center; font-weight: 800; font-size: 14px; }
 
-    .btn-action { font-size: 11px; font-weight: 700; border: none; background: none; cursor: pointer; padding: 5px; margin-top: 4px; }
+    .action-links { display: flex; gap: 12px; margin-top: 6px; }
+    .btn-link { font-size: 11px; font-weight: 700; border: none; background: none; cursor: pointer; }
     .edit { color: #2563eb; }
-    .del { color: #ef4444; margin-left: 8px; }
+    .del { color: var(--danger); }
 
-    /* Footer */
-    .footer { position: fixed; bottom: 0; width: 100%; max-width: 430px; background: #fff; padding: 15px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
-    .btn-foot { flex: 1; padding: 14px; border-radius: 10px; font-weight: 700; border: 1px solid var(--border); background: #fff; font-size: 12px; cursor: pointer; }
+    .footer { position: fixed; bottom: 0; width: 100%; max-width: 430px; background: #fff; padding: 15px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; z-index: 100; }
+    .btn-foot { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: 1px solid var(--border); background: #fff; font-size: 12px; }
     .btn-csv { background: var(--accent); color: #fff; border: none; }
 
-    /* Modal */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 1000; }
     .overlay.show { display: flex; }
     .modal { background: #fff; width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-width: 430px; margin: 0 auto; }
     .label { font-size: 10px; font-weight: 800; color: #bbb; margin-bottom: 6px; display: block; text-transform: uppercase; }
     .input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; font-size: 16px; background: #fafafa; font-weight: 600; outline: none; }
     .btn-save { width: 100%; background: var(--accent); color: #fff; padding: 16px; border: none; border-radius: 14px; font-weight: 800; cursor: pointer; }
+    
+    #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; font-weight: 800; font-size: 12px; }
   </style>
 </head>
 <body>
 
-<div class="app">
-  <div class="header">
-    <div class="app-title">STOCK MANAGER PRO</div>
-    <div class="total-badge" id="totalBadge">0 ITEMS</div>
-  </div>
+<div id="loading">READING BARCODE...</div>
 
-  <div class="action-section">
+<div class="app">
+  <header>
+    <h1>STOCK COUNTER</h1>
+    <div class="total-badge" id="totalBadge">0 ITEMS</div>
+  </header>
+
+  <div class="action-area">
     <div id="scannerWrap">
-      <div class="placeholder" id="placeholder">CAMERA PREVIEW</div>
+      <div class="placeholder" id="placeholder">CAMERA READY</div>
       <div id="reader"></div>
     </div>
     <div class="btn-group">
-      <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCANNER</button>
+      <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCAN</button>
       <button class="btn btn-alt" onclick="document.getElementById('fileInput').click()">UPLOAD PHOTO</button>
-      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImage(this)">
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="decodeImage(this)">
     </div>
   </div>
 
   <div class="status-bar">
     <div class="dot" id="statusDot"></div>
-    <span id="statusText">SYSTEM READY</span>
+    <span id="statusText">READY</span>
   </div>
 
   <div class="list-container" id="itemsList"></div>
 
   <div class="footer">
-    <button class="btn-foot" onclick="clearAll()">CLEAR ALL</button>
+    <button class="btn-foot" onclick="clearAll()">RESET</button>
     <button class="btn-foot btn-csv" onclick="exportCSV()">EXPORT CSV</button>
   </div>
 </div>
@@ -98,24 +105,20 @@
 <div class="overlay" id="modal">
   <div class="modal">
     <div style="width: 40px; height: 4px; background: #eee; border-radius: 2px; margin: 0 auto 20px;"></div>
-    <h2 id="modalTitle" style="font-size: 18px; font-weight: 800; margin-bottom: 20px;">NEW ITEM FOUND</h2>
-    
-    <label class="label">JANCODE (AUTOMATIC)</label>
+    <h2 id="modalTitle" style="font-size: 18px; font-weight: 800; margin-bottom: 20px;">ITEM INFO</h2>
+    <label class="label">JANCODE</label>
     <input class="input" id="inBarcode" readonly style="color:#888;">
-    
     <label class="label">PRODUCT NAME</label>
-    <input class="input" id="inName" placeholder="Type name here...">
-    
+    <input class="input" id="inName" placeholder="Type Product Name...">
     <label class="label">COLOR / DETAIL</label>
-    <input class="input" id="inDetail" placeholder="Type color/detail here...">
-    
-    <button class="btn-save" onclick="saveData()">CONFIRM & SAVE</button>
-    <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; font-weight:700; font-size:12px; cursor:pointer;">CANCEL</button>
+    <input class="input" id="inDetail" placeholder="Type Color or Detail...">
+    <button class="btn-save" onclick="saveData()">SAVE PRODUCT</button>
+    <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; font-weight:700; font-size:12px;">CANCEL</button>
   </div>
 </div>
 
 <script>
-  let inventory = JSON.parse(localStorage.getItem('stock_v5') || '[]');
+  let inventory = JSON.parse(localStorage.getItem('stock_v6') || '[]');
   let html5QrCode = null;
   let isScanning = false;
   let editingIdx = null;
@@ -123,19 +126,19 @@
   function render() {
     const list = document.getElementById('itemsList');
     document.getElementById('totalBadge').textContent = inventory.reduce((s, i) => s + i.count, 0) + ' ITEMS';
-    
     if (inventory.length === 0) {
-      list.innerHTML = '<div style="text-align:center; padding:60px; color:#ccc; font-size:12px; font-weight:700;">NO ITEMS RECORDED</div>';
+      list.innerHTML = '<div style="text-align:center; padding:60px; color:#ccc; font-size:12px; font-weight:700;">NO ITEMS</div>';
       return;
     }
-
     list.innerHTML = inventory.map((item, idx) => `
       <div class="item-card">
         <div class="item-info">
           <div class="item-name">${item.name}</div>
-          <div class="item-meta">${item.barcode} | ${item.detail}</div>
-          <button class="btn-action edit" onclick="startEdit(${idx})">EDIT</button>
-          <button class="btn-action del" onclick="removeItem(${idx})">DELETE</button>
+          <div class="item-meta">${item.barcode} | ${item.detail || '-'}</div>
+          <div class="action-links">
+            <button class="btn-link edit" onclick="startEdit(${idx})">EDIT</button>
+            <button class="btn-link del" onclick="removeItem(${idx})">REMOVE</button>
+          </div>
         </div>
         <div class="qty-box">
           <button class="btn-q" onclick="adjust(${idx}, -1)">-</button>
@@ -146,80 +149,62 @@
     `).join('');
   }
 
-  // --- Live Scanner Logic ---
+  // --- Image Upload Decode ---
+  async function decodeImage(input) {
+    if (!input.files || !input.files[0]) return;
+    document.getElementById('loading').style.display = 'flex';
+    
+    const tempScanner = new Html5Qrcode("reader");
+    try {
+      const result = await tempScanner.scanFile(input.files[0], true);
+      onScanSuccess(result);
+    } catch (err) {
+      alert("No barcode found in this image. Please ensure it's clear.");
+    } finally {
+      document.getElementById('loading').style.display = 'none';
+      input.value = "";
+    }
+  }
+
+  // --- Live Scanner ---
   async function toggleScanner() {
     const btn = document.getElementById('scanBtn');
-    const dot = document.getElementById('statusDot');
-    
     if (!isScanning) {
       html5QrCode = new Html5Qrcode("reader");
       document.getElementById('placeholder').style.display = 'none';
       try {
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 15, qrbox: { width: 250, height: 120 } },
-          onScanSuccess
-        );
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 120 } }, onScanSuccess);
         isScanning = true;
-        btn.textContent = "STOP SCANNER";
-        btn.classList.add('active');
-        dot.classList.add('active');
-        document.getElementById('statusText').textContent = "SCANNING...";
-      } catch (err) {
-        document.getElementById('placeholder').style.display = 'flex';
-        alert("Camera access denied.");
-      }
-    } else {
-      stopScanner();
-    }
+        btn.textContent = "STOP";
+        document.getElementById('statusDot').classList.add('active');
+      } catch (err) { alert("Camera Error"); }
+    } else { stopScanner(); }
   }
 
   async function stopScanner() {
     if (html5QrCode) {
       await html5QrCode.stop();
       isScanning = false;
-      document.getElementById('scanBtn').textContent = "LIVE SCANNER";
-      document.getElementById('scanBtn').classList.remove('active');
+      document.getElementById('scanBtn').textContent = "LIVE SCAN";
       document.getElementById('statusDot').classList.remove('active');
-      document.getElementById('statusText').textContent = "SYSTEM READY";
       document.getElementById('placeholder').style.display = 'flex';
     }
   }
 
   function onScanSuccess(code) {
     const existingIdx = inventory.findIndex(i => i.barcode === code);
-    
     if (existingIdx !== -1) {
-      // Auto +1
       inventory[existingIdx].count++;
       save();
       if (navigator.vibrate) navigator.vibrate(80);
       document.getElementById('statusText').textContent = "ADDED: " + inventory[existingIdx].name;
     } else {
-      // Manual Input for New Item
-      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-      stopScanner();
+      if (isScanning) stopScanner();
       editingIdx = null;
-      document.getElementById('modalTitle').textContent = "NEW ITEM DETECTED";
       document.getElementById('inBarcode').value = code;
       document.getElementById('inName').value = "";
       document.getElementById('inDetail').value = "";
       document.getElementById('modal').classList.add('show');
-    }
-  }
-
-  // --- Upload Photo Logic ---
-  function handleImage(input) {
-    if (input.files && input.files[0]) {
-      // เนื่องจากเราปิดระบบ OCR ให้ผู้ใช้ดูรูปจากตัวเลือกภาพของเครื่องแล้วกรอกเอง
-      // เราจะแสดงข้อความแนะนำให้ผู้ใช้ทราบ
-      document.getElementById('statusText').textContent = "IMAGE SELECTED: PLEASE ENTER INFO";
-      
-      // ให้สุ่มรหัสชั่วคราวหรือให้สแกน barcode จากภาพ (ถ้าต้องการ) 
-      // แต่เบื้องต้นระบบนี้เน้นให้ใช้ Live Scanner นำทาง JANCODE 
-      // หากจะกรอกเองทั้งหมดผ่าน Upload ต้องใช้หน้าว่างๆ
-      alert("Please use LIVE SCANNER to capture JANCODE first. Upload Photo is for manual reference.");
-      input.value = "";
     }
   }
 
@@ -228,15 +213,13 @@
     const barcode = document.getElementById('inBarcode').value;
     const name = document.getElementById('inName').value.trim();
     const detail = document.getElementById('inDetail').value.trim();
-
-    if (!name) return alert("Product Name is required");
+    if (!name) return alert("Enter Name");
 
     if (editingIdx !== null) {
       inventory[editingIdx] = { ...inventory[editingIdx], name, detail };
     } else {
       inventory.unshift({ barcode, name, detail, count: 1 });
     }
-
     save();
     closeModal();
   }
@@ -244,7 +227,6 @@
   function startEdit(idx) {
     editingIdx = idx;
     const item = inventory[idx];
-    document.getElementById('modalTitle').textContent = "EDIT PRODUCT INFO";
     document.getElementById('inBarcode').value = item.barcode;
     document.getElementById('inName').value = item.name;
     document.getElementById('inDetail').value = item.detail;
@@ -257,27 +239,19 @@
   }
 
   function removeItem(idx) {
-    if (confirm("Delete this item?")) {
-      inventory.splice(idx, 1);
-      save();
-    }
+    if (confirm("Delete?")) { inventory.splice(idx, 1); save(); }
   }
 
   function clearAll() {
-    if (confirm("Clear everything?")) {
-      inventory = [];
-      save();
-    }
+    if (confirm("Reset everything?")) { inventory = []; save(); }
   }
 
   function save() {
-    localStorage.setItem('stock_v5', JSON.stringify(inventory));
+    localStorage.setItem('stock_v6', JSON.stringify(inventory));
     render();
   }
 
-  function closeModal() {
-    document.getElementById('modal').classList.remove('show');
-  }
+  function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
   function exportCSV() {
     if (inventory.length === 0) return;
