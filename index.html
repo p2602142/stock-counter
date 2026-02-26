@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-  <title>Stock Counter Pro</title>
+  <title>Stock Manager AI Pro</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
@@ -17,13 +17,16 @@
     .app-title { font-size: 18px; font-weight: 800; }
     .total-badge { background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 
-    /* Scanner Area */
-    .scanner-section { padding: 16px; background: #fff; border-bottom: 8px solid #f8f7f5; }
-    #scannerWrap { background: #000; border-radius: 16px; overflow: hidden; height: 180px; position: relative; border: 1px solid var(--border); }
+    /* Scanner & Upload Section */
+    .action-section { padding: 16px; background: #fff; border-bottom: 8px solid #f8f7f5; }
+    #scannerWrap { background: #000; border-radius: 16px; overflow: hidden; height: 180px; position: relative; border: 1px solid var(--border); margin-bottom: 12px; }
     .placeholder { height: 100%; display: flex; align-items: center; justify-content: center; color: #888; background: #fafafa; font-size: 13px; font-weight: 600; }
     
-    .btn-scan { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-weight: 800; cursor: pointer; font-size: 14px; margin-top: 12px; }
-    .btn-scan.active { background: #ef4444; }
+    .btn-group { display: flex; gap: 8px; }
+    .btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; font-size: 13px; }
+    .btn-main { background: var(--accent); color: #fff; }
+    .btn-alt { background: #fff; border: 1.5px solid var(--accent); color: var(--accent); }
+    .btn-main.active { background: #ef4444; }
 
     .status-bar { padding: 10px 16px; font-size: 11px; color: #666; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
@@ -63,16 +66,20 @@
 
 <div class="app">
   <div class="header">
-    <div class="app-title">STOCK COUNTER</div>
+    <div class="app-title">STOCK MANAGER PRO</div>
     <div class="total-badge" id="totalBadge">0 ITEMS</div>
   </div>
 
-  <div class="scanner-section">
+  <div class="action-section">
     <div id="scannerWrap">
       <div class="placeholder" id="placeholder">CAMERA PREVIEW</div>
       <div id="reader"></div>
     </div>
-    <button class="btn-scan" id="scanBtn" onclick="toggleScanner()">START SCANNER</button>
+    <div class="btn-group">
+      <button class="btn btn-main" id="scanBtn" onclick="toggleScanner()">LIVE SCANNER</button>
+      <button class="btn btn-alt" onclick="document.getElementById('fileInput').click()">UPLOAD PHOTO</button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImage(this)">
+    </div>
   </div>
 
   <div class="status-bar">
@@ -93,22 +100,22 @@
     <div style="width: 40px; height: 4px; background: #eee; border-radius: 2px; margin: 0 auto 20px;"></div>
     <h2 id="modalTitle" style="font-size: 18px; font-weight: 800; margin-bottom: 20px;">NEW ITEM FOUND</h2>
     
-    <label class="label">JANCODE / BARCODE</label>
+    <label class="label">JANCODE (AUTOMATIC)</label>
     <input class="input" id="inBarcode" readonly style="color:#888;">
     
     <label class="label">PRODUCT NAME</label>
-    <input class="input" id="inName" placeholder="Enter Name">
+    <input class="input" id="inName" placeholder="Type name here...">
     
     <label class="label">COLOR / DETAIL</label>
-    <input class="input" id="inDetail" placeholder="Enter Color/Detail">
+    <input class="input" id="inDetail" placeholder="Type color/detail here...">
     
-    <button class="btn-save" onclick="saveData()">SAVE PRODUCT</button>
+    <button class="btn-save" onclick="saveData()">CONFIRM & SAVE</button>
     <button onclick="closeModal()" style="width:100%; background:none; border:none; color:#aaa; margin-top:15px; font-weight:700; font-size:12px; cursor:pointer;">CANCEL</button>
   </div>
 </div>
 
 <script>
-  let inventory = JSON.parse(localStorage.getItem('stock_v4') || '[]');
+  let inventory = JSON.parse(localStorage.getItem('stock_v5') || '[]');
   let html5QrCode = null;
   let isScanning = false;
   let editingIdx = null;
@@ -139,7 +146,7 @@
     `).join('');
   }
 
-  // --- Scanner Logic ---
+  // --- Live Scanner Logic ---
   async function toggleScanner() {
     const btn = document.getElementById('scanBtn');
     const dot = document.getElementById('statusDot');
@@ -160,7 +167,7 @@
         document.getElementById('statusText').textContent = "SCANNING...";
       } catch (err) {
         document.getElementById('placeholder').style.display = 'flex';
-        alert("Camera Error: Please check permissions.");
+        alert("Camera access denied.");
       }
     } else {
       stopScanner();
@@ -171,7 +178,7 @@
     if (html5QrCode) {
       await html5QrCode.stop();
       isScanning = false;
-      document.getElementById('scanBtn').textContent = "START SCANNER";
+      document.getElementById('scanBtn').textContent = "LIVE SCANNER";
       document.getElementById('scanBtn').classList.remove('active');
       document.getElementById('statusDot').classList.remove('active');
       document.getElementById('statusText').textContent = "SYSTEM READY";
@@ -183,21 +190,36 @@
     const existingIdx = inventory.findIndex(i => i.barcode === code);
     
     if (existingIdx !== -1) {
-      // Automatic +1 if JANCODE exists
+      // Auto +1
       inventory[existingIdx].count++;
       save();
       if (navigator.vibrate) navigator.vibrate(80);
       document.getElementById('statusText').textContent = "ADDED: " + inventory[existingIdx].name;
     } else {
-      // Open Modal for NEW JANCODE
+      // Manual Input for New Item
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       stopScanner();
       editingIdx = null;
-      document.getElementById('modalTitle').textContent = "NEW ITEM FOUND";
+      document.getElementById('modalTitle').textContent = "NEW ITEM DETECTED";
       document.getElementById('inBarcode').value = code;
       document.getElementById('inName').value = "";
       document.getElementById('inDetail').value = "";
       document.getElementById('modal').classList.add('show');
+    }
+  }
+
+  // --- Upload Photo Logic ---
+  function handleImage(input) {
+    if (input.files && input.files[0]) {
+      // เนื่องจากเราปิดระบบ OCR ให้ผู้ใช้ดูรูปจากตัวเลือกภาพของเครื่องแล้วกรอกเอง
+      // เราจะแสดงข้อความแนะนำให้ผู้ใช้ทราบ
+      document.getElementById('statusText').textContent = "IMAGE SELECTED: PLEASE ENTER INFO";
+      
+      // ให้สุ่มรหัสชั่วคราวหรือให้สแกน barcode จากภาพ (ถ้าต้องการ) 
+      // แต่เบื้องต้นระบบนี้เน้นให้ใช้ Live Scanner นำทาง JANCODE 
+      // หากจะกรอกเองทั้งหมดผ่าน Upload ต้องใช้หน้าว่างๆ
+      alert("Please use LIVE SCANNER to capture JANCODE first. Upload Photo is for manual reference.");
+      input.value = "";
     }
   }
 
@@ -207,7 +229,7 @@
     const name = document.getElementById('inName').value.trim();
     const detail = document.getElementById('inDetail').value.trim();
 
-    if (!name) return alert("Please enter Product Name");
+    if (!name) return alert("Product Name is required");
 
     if (editingIdx !== null) {
       inventory[editingIdx] = { ...inventory[editingIdx], name, detail };
@@ -242,14 +264,14 @@
   }
 
   function clearAll() {
-    if (confirm("CLEAR ALL DATA? This cannot be undone.")) {
+    if (confirm("Clear everything?")) {
       inventory = [];
       save();
     }
   }
 
   function save() {
-    localStorage.setItem('stock_v4', JSON.stringify(inventory));
+    localStorage.setItem('stock_v5', JSON.stringify(inventory));
     render();
   }
 
